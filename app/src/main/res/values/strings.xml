@@ -1,4 +1,11 @@
 <resources>
     <string name="app_name">JAM Player</string>
     <string name="action_settings">Settings</string>
+
+    <string name="permission_message">Bez uprawnień aplikacja nie zadziała</string>
+    <string name="permission_title">Brak uprawnień</string>
+    <string name="pause">Pauza</string>
+    <string name="play">Play</string>
+    <string name="prev">Poprzedni</string>
+    <string name="next">Następny</string>
 </resources>

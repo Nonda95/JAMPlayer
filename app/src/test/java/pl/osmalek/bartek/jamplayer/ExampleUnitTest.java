@@ -1,15 +1,21 @@
 package pl.osmalek.bartek.jamplayer;
 
 import org.junit.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 
-import static org.junit.Assert.*;
+import pl.osmalek.bartek.jamplayer.model.Folder;
+import pl.osmalek.bartek.jamplayer.model.MusicStore;
 
 /**
  * To work on unit tests, switch the Test Artifact in the Build Variants view.
  */
 public class ExampleUnitTest {
+    @Mock
+    Folder main;
+    @InjectMocks
+    MusicStore musicStore = MusicStore.getInstance();
     @Test
-    public void addition_isCorrect() throws Exception {
-        assertEquals(4, 2 + 2);
+    public void testGetFileFromUri() throws Exception {
     }
 }
