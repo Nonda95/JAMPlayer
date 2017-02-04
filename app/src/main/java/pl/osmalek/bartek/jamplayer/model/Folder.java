@@ -1,5 +1,6 @@
 package pl.osmalek.bartek.jamplayer.model;
 
+import android.support.annotation.NonNull;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 
@@ -9,12 +10,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
-/**
- * Created by osmalek on 07.10.2016.
- */
 
 public class Folder extends BaseFile implements Comparable<Folder> {
     @Expose
@@ -22,16 +20,14 @@ public class Folder extends BaseFile implements Comparable<Folder> {
     @Expose
     LinkedHashSet<MusicFile> files;
 
-    public Folder(String filename, LinkedHashSet<MusicFile> files, SortedSet<Folder> folders) {
-        super(filename);
+    Folder(String mediaId, String filename, LinkedHashSet<MusicFile> files, SortedSet<Folder> folders) {
+        super(mediaId, filename);
         this.files = files;
         this.folders = folders;
     }
 
-    public Folder(String filename) {
-        super(filename);
-        this.files = new LinkedHashSet<>();
-        this.folders = new TreeSet<>();
+    Folder(String mediaId, String filename) {
+        this(mediaId, filename, new LinkedHashSet<>(), new TreeSet<>());
     }
 
     @Override
@@ -42,7 +38,9 @@ public class Folder extends BaseFile implements Comparable<Folder> {
     @Override
     public MediaMetadataCompat getAsMediaMetadata() {
         return new MediaMetadataCompat.Builder()
+                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, getMediaId())
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, getFilename())
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, String.format(Locale.getDefault(), "%d elements", files.size() + folders.size()))
                 .putLong(MediaMetadataCompat.METADATA_KEY_NUM_TRACKS, files.size())
                 .build();
     }
@@ -95,7 +93,7 @@ public class Folder extends BaseFile implements Comparable<Folder> {
     }
 
     @Override
-    public int compareTo(Folder folder) {
+    public int compareTo(@NonNull Folder folder) {
         return getFilename().compareTo(folder.getFilename());
     }
 }

@@ -1,18 +1,14 @@
 package pl.osmalek.bartek.jamplayer.model;
 
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 
 import com.google.gson.annotations.Expose;
 
-/**
- * Created by osmalek on 07.10.2016.
- */
 public class MusicFile extends BaseFile {
     @Expose
-    long id;
+    long trackId;
     @Expose
     String artist;
     @Expose
@@ -28,9 +24,9 @@ public class MusicFile extends BaseFile {
     @Expose
     String albumArt;
 
-    public MusicFile(long id, String filename, Uri path, String artist, String title, long albumId, long duration, String trackNumber, String albumArt) {
-        super(filename);
-        this.id = id;
+    public MusicFile(String mediaId, long track_id, String filename, Uri path, String artist, String title, long albumId, long duration, String trackNumber, String albumArt) {
+        super(mediaId, filename);
+        this.trackId = track_id;
         this.path = path.toString();
         this.artist = artist;
         this.title = title;
@@ -53,7 +49,15 @@ public class MusicFile extends BaseFile {
     }
 
     public Uri getPath() {
-        return Uri.parse(path);
+        return Uri.parse("file://" + path);
+    }
+
+    public long getAlbumId() {
+        return albumId;
+    }
+
+    public long getTrackId() {
+        return trackId;
     }
 
     @Override
@@ -84,7 +88,7 @@ public class MusicFile extends BaseFile {
 
     public MediaMetadataCompat getAsMediaMetadataWithArt() {
         return getMetadataBuilder()
-                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, BitmapFactory.decodeFile(albumArt))
+//                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, BitmapFactory.decodeFile(albumArt))
                 .build();
     }
 }

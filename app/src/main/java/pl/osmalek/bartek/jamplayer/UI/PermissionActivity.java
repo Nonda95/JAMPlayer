@@ -1,7 +1,6 @@
-package pl.osmalek.bartek.jamplayer.UI;
+package pl.osmalek.bartek.jamplayer.ui;
 
 import android.Manifest;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -21,7 +20,7 @@ import pl.osmalek.bartek.jamplayer.R;
  * Created by osmalek on 21.10.2016.
  */
 
-public abstract class PermissionActivity extends AppCompatActivity implements DialogInterface.OnClickListener {
+public abstract class PermissionActivity extends AppCompatActivity {
     static final int READ_EXTERNAL_STORAGE_PERMISSION = 1;
 
     boolean before;
@@ -38,7 +37,7 @@ public abstract class PermissionActivity extends AppCompatActivity implements Di
                     AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AlertDialog_Light));
                     dialogBuilder.setMessage(R.string.permission_message)
                             .setTitle(R.string.permission_title)
-                            .setPositiveButton("OK", this)
+                            .setPositiveButton("OK", (dialog, which) -> ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, READ_EXTERNAL_STORAGE_PERMISSION))
                             .setCancelable(false);
                     AlertDialog dialog = dialogBuilder.create();
                     dialog.setCanceledOnTouchOutside(false);
@@ -50,7 +49,7 @@ public abstract class PermissionActivity extends AppCompatActivity implements Di
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(final int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
             case READ_EXTERNAL_STORAGE_PERMISSION: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -70,11 +69,6 @@ public abstract class PermissionActivity extends AppCompatActivity implements Di
                 }
             }
         }
-    }
-
-    @Override
-    public void onClick(DialogInterface dialogInterface, int i) {
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, READ_EXTERNAL_STORAGE_PERMISSION);
     }
 
     protected abstract void permissionDenied(int requestCode);

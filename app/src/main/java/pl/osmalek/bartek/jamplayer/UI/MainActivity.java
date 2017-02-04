@@ -1,26 +1,123 @@
-package pl.osmalek.bartek.jamplayer.UI;
+package pl.osmalek.bartek.jamplayer.ui;
 
-import android.content.ComponentName;
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.RemoteException;
+import android.os.SystemClock;
+import android.support.design.widget.BottomSheetBehavior;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
+import android.support.v4.media.session.PlaybackStateCompat;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.SeekBar;
+import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.request.RequestOptions;
+import com.github.florent37.glidepalette.GlidePalette;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
+import butterknife.BindView;
 import butterknife.ButterKnife;
-import pl.osmalek.bartek.jamplayer.MusicService;
+import butterknife.OnClick;
+import io.reactivex.disposables.Disposable;
+import pl.osmalek.bartek.jamplayer.App;
+import pl.osmalek.bartek.jamplayer.PlayingNowSheetCallback;
 import pl.osmalek.bartek.jamplayer.R;
-import pl.osmalek.bartek.jamplayer.model.MusicStore;
+import pl.osmalek.bartek.jamplayer.adapters.QueueListAdapter;
 
 
-public class MainActivity extends AppCompatActivity {
-    MusicStore musicStore;
-    private MediaBrowserCompat mMediaBrowser;
+public class MainActivity extends AppCompatActivity //        implements LoaderManager.LoaderCallbacks<MainPresenter>
+{
+    public static final String SHOW_PLAYING_NOW = "pl.osmalek.bartek.ui.playing_now";
+    private static final int LOADER_ID = 11;
+    private static final String PLAYING_NOW_EXPANDED = "playingNowExpandded";
+    @BindView(R.id.bottom_sheet)
+    View bottomSheet;
+    @BindView(R.id.fab)
+    FloatingActionButton fab;
+    @BindView(R.id.bs_content)
+    LinearLayout bs_content;
+    @BindView(R.id.queueList)
+    ListView queueList;
+    @BindView(R.id.drawer)
+    DrawerLayout drawerLayout;
+    @BindView(R.id.title_playing_now)
+    TextView title;
+    @BindView(R.id.cover)
+    ImageView cover;
+    @BindView(R.id.seekBar)
+    SeekBar seekBar;
+
+    private BottomSheetBehavior mBottomSheetBehavior;
+    private QueueListAdapter mQueueAdapter;
+    private PlayingNowSheetCallback mSheetCallback;
+    private PlaybackStateCompat mLastState;
+    private final MediaControllerCallback mControllerCallback = new MediaControllerCallback();
+    private MediaBrowserCompat mBrowser;
+    private MediaControllerCompat mController;
+    private Disposable mBrowserSubscription;
+
+    private final Handler mHandler = new Handler();
+    private final Runnable mUpdateProgressTask = this::updateProgress;
+
+    private void updateProgress() {
+        long progress = SystemClock.elapsedRealtime() - mLastState.getLastPositionUpdateTime();
+        updateProgress((int) (mLastState.getPosition() + progress));
+    }
+
+    private final ScheduledExecutorService mExecutorService =
+            Executors.newSingleThreadScheduledExecutor();
+
+    private ScheduledFuture<?> mScheduleFuture;
+
+    public void updateProgress(int progress) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            seekBar.setProgress(progress, true);
+        } else {
+            seekBar.setProgress(progress);
+        }
+    }
+
+    private final SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener() {
+        @Override
+        public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+
+        }
+
+        @Override
+        public void onStartTrackingTouch(SeekBar seekBar) {
+
+        }
+
+        @Override
+        public void onStopTrackingTouch(SeekBar seekBar) {
+            MediaControllerCompat.getMediaController(MainActivity.this).getTransportControls().seekTo(seekBar.getProgress());
+        }
+    };
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,42 +126,55 @@ public class MainActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        musicStore = MusicStore.getInstance();
-        if (!musicStore.isReady()) {
-            musicStore.prepareStore(this);
+        seekBar.setOnSeekBarChangeListener(onSeekBarChangeListener);
+        mBottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
+        mBottomSheetBehavior.setBottomSheetCallback(mSheetCallback = new PlayingNowSheetCallback(this, bs_content, title, fab));
+        queueList.setAdapter(mQueueAdapter = new QueueListAdapter(this, new ArrayList<>()));
+        queueList.setOnItemClickListener((adapterView, view, i, l) -> MediaControllerCompat.getMediaController(MainActivity.this).getTransportControls().skipToQueueItem(l));
+        if (savedInstanceState != null && savedInstanceState.getBoolean(PLAYING_NOW_EXPANDED, false)) {
+            mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            mSheetCallback.onStateChanged(bottomSheet, BottomSheetBehavior.STATE_EXPANDED);
         }
-        FileListFragment fileListFragment = FileListFragment.newInstance(musicStore.getMainFolder());
-        getFragmentManager().beginTransaction().add(R.id.file_list_fragment_container, fileListFragment).commit();
+        showPlayingNowIfNeeded(getIntent());
+    }
 
-        mMediaBrowser = new MediaBrowserCompat(this, new ComponentName(this, MusicService.class),
-                new MediaBrowserCompat.ConnectionCallback() {
-                    @Override
-                    public void onConnected() {
-                        try {
-                            MediaSessionCompat.Token token =
-                                    mMediaBrowser.getSessionToken();
-                            // This is what gives us access to everything
-                            MediaControllerCompat controller =
-                                    new MediaControllerCompat(MainActivity.this, token);
-                            setSupportMediaController(controller);
-                        } catch (RemoteException e) {
-                            Log.e(MainActivity.class.getSimpleName(),
-                                    "Error creating controller", e);
-                        }
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mBrowserSubscription = App.get().getBrowserSubject()
+                .subscribe(mediaBrowserCompat -> {
+                    mBrowser = mediaBrowserCompat;
+                    browserReady();
+                });
+    }
 
-                    }
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putBoolean(PLAYING_NOW_EXPANDED, mBottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED);
+        super.onSaveInstanceState(outState);
+    }
 
-                    @Override
-                    public void onConnectionSuspended() {
-                        super.onConnectionSuspended();
-                    }
+    @Override
+    protected void onStop() {
+        if (mBrowserSubscription != null && !mBrowserSubscription.isDisposed())
+            mBrowserSubscription.dispose();
+        super.onStop();
+    }
 
-                    @Override
-                    public void onConnectionFailed() {
-                        super.onConnectionFailed();
-                    }
-                }, null);
-        mMediaBrowser.connect();
+    @Override
+    protected void onNewIntent(Intent intent) {
+        showPlayingNowIfNeeded(intent);
+    }
+
+    private void showPlayingNowIfNeeded(Intent intent) {
+        if (intent != null && intent.getBooleanExtra(SHOW_PLAYING_NOW, false)) {
+            mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            mSheetCallback.onStateChanged(bottomSheet, BottomSheetBehavior.STATE_EXPANDED);
+        }
+    }
+
+    public void setPlayButton(boolean isPlaying) {
+        fab.setImageResource(isPlaying ? R.drawable.ic_pause_white_48dp : R.drawable.ic_play_arrow_white_48dp);
     }
 
     @Override
@@ -82,16 +192,152 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        switch (id) {
+            case R.id.queueDrawer:
+                if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
+                    drawerLayout.closeDrawer(GravityCompat.END);
+                } else {
+                    drawerLayout.openDrawer(GravityCompat.END);
+                }
+                return true;
+            default:
+                return false;
         }
-
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
     protected void onDestroy() {
-        mMediaBrowser.disconnect();
+        mController.unregisterCallback(mControllerCallback);
         super.onDestroy();
     }
+
+    @Override
+    public void onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
+            drawerLayout.closeDrawer(GravityCompat.END);
+        } else if (mBottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
+            mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        } else {
+            if (!((BrowseFragment) getSupportFragmentManager().findFragmentById(R.id.file_list_fragment_container)).handleBackPressed())
+                super.onBackPressed();
+        }
+    }
+
+    public void prevSong(View view) {
+        MediaControllerCompat.getMediaController(this).getTransportControls().skipToPrevious();
+    }
+
+    public void nextSong(View view) {
+        MediaControllerCompat.getMediaController(this).getTransportControls().skipToNext();
+    }
+
+    public void onBottomSheetClick(View v) {
+        if (mBottomSheetBehavior.getState() == BottomSheetBehavior.STATE_COLLAPSED)
+            mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+        Log.d("BottomSheetClick", "Clicked!!");
+    }
+
+    @OnClick(R.id.fab)
+    public void onFabClick(View view) {
+        if (MediaControllerCompat.getMediaController(MainActivity.this).getPlaybackState() != null && MediaControllerCompat.getMediaController(MainActivity.this).getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) {
+            MediaControllerCompat.getMediaController(MainActivity.this).getTransportControls().pause();
+        } else {
+            MediaControllerCompat.getMediaController(MainActivity.this).getTransportControls().play();
+        }
+    }
+
+    public void setSongTitle(CharSequence songTitle) {
+        title.setText(songTitle);
+    }
+
+    public void setMaxProgress(int maxProgress) {
+        seekBar.setMax(maxProgress);
+    }
+
+    public void setPlayingQueue(List<MediaSessionCompat.QueueItem> queueAdapter) {
+        mQueueAdapter.setQueue(queueAdapter);
+    }
+
+    public void browserReady() {
+
+        try {
+            mController = new MediaControllerCompat(MainActivity.this, mBrowser.getSessionToken());
+            mController.registerCallback(mControllerCallback);
+            if (getSupportFragmentManager().findFragmentById(R.id.file_list_fragment_container) == null) {
+                getSupportFragmentManager().beginTransaction().add(R.id.file_list_fragment_container, BrowseFragment.newInstance(mBrowser.getRoot(), false)).commit();
+            }
+            MediaControllerCompat.setMediaController(this, mController);
+            mControllerCallback.onQueueChanged(mController.getQueue());
+            mControllerCallback.onMetadataChanged(mController.getMetadata());
+            mControllerCallback.onPlaybackStateChanged(mController.getPlaybackState());
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void scheduleSeekBarUpdate() {
+        stopSeekBarUpdate();
+        if (!mExecutorService.isShutdown()) {
+            mScheduleFuture = mExecutorService.scheduleAtFixedRate(
+                    () -> mHandler.post(mUpdateProgressTask), 100,
+                    200, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private void stopSeekBarUpdate() {
+        if (mScheduleFuture != null) {
+            mScheduleFuture.cancel(false);
+        }
+    }
+
+    private void loadCover(MediaMetadataCompat metadata) {
+        Glide.with(this).load(metadata.getDescription().getIconUri())
+                .apply(RequestOptions.errorOf(R.drawable.ic_album_primary_48dp))
+                .listener(GlidePalette.with(metadata.getDescription().getIconUri() != null ? metadata.getDescription().getIconUri().toString() : null)
+                        .use(GlidePalette.Profile.MUTED_LIGHT)
+                        .crossfade(true)
+                        .intoBackground(cover))
+                .transition(DrawableTransitionOptions.withCrossFade())
+                .into(cover);
+    }
+
+    private class MediaControllerCallback extends MediaControllerCompat.Callback {
+        @Override
+        public void onPlaybackStateChanged(PlaybackStateCompat state) {
+            if (state != null) {
+                mLastState = state;
+                setPlayButton(mLastState.getState() == PlaybackStateCompat.STATE_PLAYING);
+                updateProgress((int) state.getPosition());
+                mQueueAdapter.setCurrentMediaIndex(state.getActiveQueueItemId());
+                if (!drawerLayout.isDrawerOpen(GravityCompat.END))
+                    queueList.smoothScrollToPosition((int) state.getActiveQueueItemId());
+                if (state.getState() == PlaybackStateCompat.STATE_PLAYING)
+                    scheduleSeekBarUpdate();
+                else
+                    stopSeekBarUpdate();
+            }
+        }
+
+        @Override
+        public void onQueueChanged(List<MediaSessionCompat.QueueItem> queue) {
+            if (queue != null) {
+                setPlayingQueue(queue);
+            }
+
+        }
+
+        @Override
+        public void onMetadataChanged(MediaMetadataCompat metadata) {
+            if (metadata != null) {
+                setSongTitle(metadata.getDescription().getTitle());
+                setMaxProgress((int) metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
+                updateProgress(0);
+                if (!isDestroyed())
+                    loadCover(metadata);
+            }
+        }
+
+    }
+
 }

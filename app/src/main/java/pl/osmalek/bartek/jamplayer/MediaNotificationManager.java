@@ -9,9 +9,8 @@ import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v7.app.NotificationCompat;
 
-/**
- * Created by osmalek on 03.11.2016.
- */
+import pl.osmalek.bartek.jamplayer.mediaservice.MusicService;
+
 
 public class MediaNotificationManager {
 
@@ -57,9 +56,7 @@ public class MediaNotificationManager {
             }
             mService.startForeground(NOTIFICATION_ID, notification);
         } else {
-            if (!isPlaying) {
-                mService.stopForeground(false);
-            }
+            mService.stopForeground(false);
             mNotificationManager.notify(NOTIFICATION_ID, notification);
         }
     }

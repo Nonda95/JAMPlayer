@@ -1,114 +1,160 @@
 package pl.osmalek.bartek.jamplayer.adapters;
 
-import android.net.Uri;
+import android.content.Context;
+import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import java.util.Locale;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.request.RequestOptions;
+
+import java.util.List;
 
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import pl.osmalek.bartek.jamplayer.R;
-import pl.osmalek.bartek.jamplayer.model.BaseFile;
-import pl.osmalek.bartek.jamplayer.model.Folder;
-import pl.osmalek.bartek.jamplayer.model.MusicFile;
 
-/**
- * Created by osmalek on 08.10.2016.
- */
 
-public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
-    Folder folder;
-    OnFileClickListener listener;
+public class FileAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private static final int HEADER_TYPE = 1;
+    private static final int LIST_TYPE = 2;
+    private List<MediaBrowserCompat.MediaItem> mediaItems;
+    private OnFileClickListener listener;
+    private Context mContext;
+    private boolean mHasParent;
 
-    public FileAdapter(Folder folder, OnFileClickListener listener) {
-        this.folder = folder;
+    public FileAdapter(List<MediaBrowserCompat.MediaItem> mediaItems, OnFileClickListener listener, Context context, boolean hasParent) {
+        this.mediaItems = mediaItems;
         this.listener = listener;
+        mContext = context;
+        mHasParent = hasParent;
     }
 
     @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.file_element, parent, false);
+    public int getItemViewType(int position) {
+        return mHasParent && position == 0 ? HEADER_TYPE : LIST_TYPE;
+    }
+
+    @Override
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        if (viewType == HEADER_TYPE) {
+            View v = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.file_parent, parent, false);
+            return new ParentViewHolder(v);
+        }
+        View v = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.browse_item, parent, false);
         return new ViewHolder(v);
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
-        holder.artist.setVisibility(View.VISIBLE);
-        if (folder.getParent() != null) {
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+        if (mHasParent) {
             if (position == 0) {
-                holder.fileImage.setImageResource(R.drawable.ic_arrow_back_black_48dp);
-                holder.title.setText("Back");
-                holder.artist.setVisibility(View.INVISIBLE);
                 return;
             }
             position--;
         }
-        BaseFile file = folder.getFiles().get(position);
-        if (file.isFolder()) {
-            holder.title.setText(file.getFilename());
-            holder.artist.setText(String.format(Locale.getDefault(),"%d elements", ((Folder) file).getFiles().size()));
-            holder.fileImage.setImageResource(R.drawable.ic_folder_black_48dp);
-        } else {
-            holder.title.setText(((MusicFile) file).getTitle());
-            holder.artist.setText(((MusicFile) file).getArtist());
-            Uri albumUri = ((MusicFile) file).getAlbumArt();
-            if (albumUri != null) {
-                holder.fileImage.setImageURI(albumUri);
+        if (holder instanceof ViewHolder) {
+            ViewHolder vHolder = (ViewHolder) holder;
+            MediaBrowserCompat.MediaItem mediaItem = mediaItems.get(position);
+            if (mediaItem.isBrowsable()) {
+                vHolder.fileImage.setImageResource(R.drawable.ic_folder_primary_48dp);
             } else {
-                holder.fileImage.setImageResource(R.drawable.ic_album_black_48dp);
+                Glide.with(mContext).load(mediaItem.getDescription().getIconUri())
+                        .apply(RequestOptions.placeholderOf(R.drawable.ic_album_primary_48dp).circleCrop(mContext))
+                        .transition(DrawableTransitionOptions.withCrossFade())
+                        //.bitmapTransform(new CropCircleTransformation(mContext))
+                        //.placeholder(R.drawable.ic_album_primary_48dp)
+                        //.crossFade(50)
+                        .into(vHolder.fileImage);
             }
+            vHolder.title.setText(mediaItem.getDescription().getTitle());
+            vHolder.artist.setText(mediaItem.getDescription().getSubtitle());
         }
 
     }
 
     @Override
     public int getItemCount() {
-        return folder.getFiles().size() + (folder.getParent() != null ? 1 : 0);
+        return mediaItems != null ? mediaItems.size() + (mHasParent ? 1 : 0) : 0;
+    }
+
+    public void setMediaItems(List<MediaBrowserCompat.MediaItem> mediaItems) {
+        this.mediaItems = mediaItems;
+        notifyDataSetChanged();
+    }
+
+    public List<MediaBrowserCompat.MediaItem> getMediaItems() {
+        return mediaItems;
+    }
+
+    public class ParentViewHolder extends RecyclerView.ViewHolder {
+        ImageView backImage;
+
+        public ParentViewHolder(View view) {
+            super(view);
+            backImage = ButterKnife.findById(view, R.id.back_image);
+            ButterKnife.bind(this, view);
+            backImage.setImageResource(R.drawable.ic_arrow_back_primary_48dp);
+        }
+
+        @OnClick(R.id.recycler_row)
+        public void onParentClick(View view) {
+            listener.onUpClick();
+        }
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         ImageView fileImage;
         TextView title;
         TextView artist;
+        ImageButton more;
 
         public ViewHolder(View view) {
             super(view);
             fileImage = ButterKnife.findById(view, R.id.image);
             title = ButterKnife.findById(view, R.id.title);
             artist = ButterKnife.findById(view, R.id.artist);
+            more = ButterKnife.findById(view, R.id.more);
             ButterKnife.bind(this, view);
         }
 
+        @OnClick(R.id.more)
+        public void onMenuClick(View view) {
+            listener.onMenuClick((View) view.getParent().getParent(), more);
+        }
+
         @OnClick(R.id.recycler_row)
-        public void onClick(View view) {
+        public void onElementClick(View view) {
             RecyclerView parent = (RecyclerView) view.getParent();
             int position = parent.getChildLayoutPosition(view);
-            if (folder.getParent() != null) {
-                if (position == 0) {
-                    listener.onUpClick(folder.getParent());
-                    return;
-                }
+            if (mHasParent) {
                 position--;
             }
-            BaseFile file = folder.getFiles().get(position);
-            if (file.isFolder()) {
-                listener.onFolderClick((Folder) file, view);
+            MediaBrowserCompat.MediaItem mediaItem = mediaItems.get(position);
+            if (mediaItem.isBrowsable()) {
+                listener.onFolderClick(mediaItem.getDescription());
             } else {
-                listener.onSongClick((MusicFile) file);
+                listener.onSongClick(mediaItem.getDescription());
             }
         }
     }
 
     public interface OnFileClickListener {
-        void onUpClick(Folder folder);
+        void onUpClick();
 
-        void onFolderClick(Folder folder, View sharedElement);
+        void onMenuClick(View view, ImageButton button);
 
-        void onSongClick(MusicFile song);
+        void onFolderClick(MediaDescriptionCompat description);
+
+        void onSongClick(MediaDescriptionCompat description);
     }
 }
