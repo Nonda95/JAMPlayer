@@ -29,9 +29,11 @@ public class MediaNotificationManager {
     public void update(PlaybackStateCompat playbackState) {
         if (playbackState == null || playbackState.getState() == PlaybackStateCompat.STATE_STOPPED ||
                 playbackState.getState() == PlaybackStateCompat.STATE_NONE) {
-            mService.stopForeground(true);
-            mService.stopSelf();
-            mStarted = false;
+            if (playbackState == null || playbackState.getState() == PlaybackStateCompat.STATE_STOPPED) {
+                mService.stopForeground(true);
+                mService.stopSelf();
+                mStarted = false;
+            }
             return;
         }
         boolean isPlaying = playbackState.getState() == PlaybackStateCompat.STATE_PLAYING;

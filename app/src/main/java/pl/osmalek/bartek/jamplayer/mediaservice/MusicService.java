@@ -194,7 +194,6 @@ public class MusicService extends MediaBrowserServiceCompat implements Playback.
         if (!mSession.isActive()) {
             mSession.setActive(true);
         }
-
         updateMetadata();
         mPlayback.play(mPlayingQueue.get(mCurrentIndexOnQueue), fromStart);
         saveToSharedPref(false);
@@ -325,7 +324,6 @@ public class MusicService extends MediaBrowserServiceCompat implements Playback.
 
         @Override
         public void onStop() {
-
             handleStopRequest();
         }
     }

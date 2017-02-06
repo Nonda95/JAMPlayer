@@ -140,12 +140,15 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
         mBottomSheetBehavior.setBottomSheetCallback(mSheetCallback = new PlayingNowSheetCallback(this, bs_content, title, fab, playingQueueButton, closeSheetButton));
         queueList.setAdapter(mQueueAdapter = new QueueListAdapter(this, new ArrayList<>()));
         queueList.setOnItemClickListener((adapterView, view, i, l) -> MediaControllerCompat.getMediaController(MainActivity.this).getTransportControls().skipToQueueItem(l));
-        if (savedInstanceState != null && savedInstanceState.getBoolean(PLAYING_NOW_EXPANDED, false)) {
-            mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-            mSheetCallback.onStateChanged(bottomSheet, BottomSheetBehavior.STATE_EXPANDED);
+        if (savedInstanceState != null) {
+            if (savedInstanceState.getBoolean(PLAYING_NOW_EXPANDED, false)) {
+                mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                mSheetCallback.onStateChanged(bottomSheet, BottomSheetBehavior.STATE_EXPANDED);
+            }
+        } else {
+            showPlayingNowIfNeeded(getIntent());
         }
         title.setSelected(true);
-        showPlayingNowIfNeeded(getIntent());
         mBrowserSubscription = App.get().getBrowserSubject()
                 .subscribe(isBrowserReady -> {
                     if (isBrowserReady) {

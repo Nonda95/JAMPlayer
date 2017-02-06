@@ -96,7 +96,7 @@ public class MusicProvider implements Serializable {
     public List<MediaSessionCompat.QueueItem> addToQueue(@NonNull List<MediaSessionCompat.QueueItem> queue, Collection<MusicFile> songs) {
         int i = queue.size();
         for (MusicFile file : songs) {
-            queue.add(new MediaSessionCompat.QueueItem(file.getAsMediaMetadataWithArt(mContext).getDescription(), i++));
+            queue.add(new MediaSessionCompat.QueueItem(file.getAsMediaMetadata().getDescription(), i++));
         }
         return queue;
     }
@@ -113,9 +113,9 @@ public class MusicProvider implements Serializable {
         List<MediaSessionCompat.QueueItem> queue = new ArrayList<>();
         int i = 0;
         for (String mediaId : mediaIds) {
-            MusicFile file = (MusicFile) getFileFromUri(mediaId);
+            BaseFile file = getFileFromUri(mediaId);
             if (file != null) {
-                queue.add(new MediaSessionCompat.QueueItem(file.getAsMediaMetadataWithArt(mContext).getDescription(), i++));
+                queue.add(new MediaSessionCompat.QueueItem(file.getAsMediaMetadata().getDescription(), i++));
             }
         }
         return queue;
@@ -126,7 +126,7 @@ public class MusicProvider implements Serializable {
         LinkedList<MusicFile> songs = getMainFolder().getAllSongs();
         int i = 0;
         for (MusicFile song : songs) {
-            queue.add(new MediaSessionCompat.QueueItem(song.getAsMediaMetadataWithArt(mContext).getDescription(), i++));
+            queue.add(new MediaSessionCompat.QueueItem(song.getAsMediaMetadata().getDescription(), i++));
         }
         return queue;
     }
