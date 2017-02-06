@@ -26,6 +26,16 @@ public class App extends Application {
     }
 
     public ReplaySubject<MediaBrowserCompat> getBrowserSubject() {
+        if(mBrowser == null) {
+            mBrowser = new MediaBrowserCompat(this, new ComponentName(this, MusicService.class), new MediaBrowserCompat.ConnectionCallback() {
+                @Override
+                public void onConnected() {
+                    mBrowserSubject.onNext(mBrowser);
+                    mBrowserSubject.onComplete();
+                }
+            }, null);
+            mBrowser.connect();
+        }
         return mBrowserSubject;
     }
 
@@ -35,14 +45,4 @@ public class App extends Application {
         mBrowser.disconnect();
     }
 
-    public void permissionGranted() {
-        mBrowser = new MediaBrowserCompat(this, new ComponentName(this, MusicService.class), new MediaBrowserCompat.ConnectionCallback() {
-            @Override
-            public void onConnected() {
-                mBrowserSubject.onNext(mBrowser);
-                mBrowserSubject.onComplete();
-            }
-        }, null);
-        mBrowser.connect();
-    }
 }

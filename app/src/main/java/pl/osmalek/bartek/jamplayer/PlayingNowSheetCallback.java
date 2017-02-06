@@ -9,6 +9,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Gravity;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -17,39 +18,59 @@ public class PlayingNowSheetCallback extends android.support.design.widget.Botto
     private LinearLayout mContent;
     private TextView mTitle;
     private FloatingActionButton mFab;
+    private ImageButton mPlayingQueueButton;
+    private ImageButton mCloseSheetButton;
     private AccelerateDecelerateInterpolator interpolator;
 
-    public PlayingNowSheetCallback(AppCompatActivity context, LinearLayout content, TextView title, FloatingActionButton fab) {
+    public PlayingNowSheetCallback(AppCompatActivity context, LinearLayout content, TextView title, FloatingActionButton fab, ImageButton playingQueueButton, ImageButton closeSheetButton) {
         mContext = context;
         mContent = content;
         mTitle = title;
         mFab = fab;
+        mPlayingQueueButton = playingQueueButton;
+        mCloseSheetButton = closeSheetButton;
         interpolator = new AccelerateDecelerateInterpolator();
     }
 
     @Override
     public void onStateChanged(@NonNull View bottomSheet, int newState) {
-        CoordinatorLayout.LayoutParams fabParams = (CoordinatorLayout.LayoutParams)mFab.getLayoutParams();
-        if(newState == BottomSheetBehavior.STATE_EXPANDED) {
+        CoordinatorLayout.LayoutParams fabParams = (CoordinatorLayout.LayoutParams) mFab.getLayoutParams();
+        if (newState == BottomSheetBehavior.STATE_EXPANDED) {
             fabParams.gravity = Gravity.BOTTOM;
             mFab.setLayoutParams(fabParams);
             mFab.setTranslationX(0);
-            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams)mTitle.getLayoutParams();
-            params.horizontalBias = 0.5f;
+            mPlayingQueueButton.setVisibility(View.VISIBLE);
+            mCloseSheetButton.setVisibility(View.VISIBLE);
+            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) mTitle.getLayoutParams();
+            params.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.titleExpandedMargin));
+            params.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.titleExpandedMargin));
             mTitle.setLayoutParams(params);
         } else if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
+//            mPlayingQueueButton.setVisibility(View.INVISIBLE);
+//            mCloseSheetButton.setVisibility(View.GONE);
+//            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams)mTitle.getLayoutParams();
+//            params.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.titleEndMargin));
+//            params.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.titleStartMargin));
+//            mTitle.setLayoutParams(params);
             fabParams.gravity = Gravity.END | Gravity.BOTTOM;
             mFab.setLayoutParams(fabParams);
             mFab.setTranslationX(0);
-            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams)mTitle.getLayoutParams();
-            params.horizontalBias = 0;
+//            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams)mTitle.getLayoutParams();
+//            params.horizontalBias = 0;
+//            mTitle.setLayoutParams(params);
+        } else if (newState == BottomSheetBehavior.STATE_DRAGGING) {
+            mPlayingQueueButton.setVisibility(View.INVISIBLE);
+            mCloseSheetButton.setVisibility(View.GONE);
+            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) mTitle.getLayoutParams();
+            params.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.titleEndMargin));
+            params.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.titleStartMargin));
             mTitle.setLayoutParams(params);
         }
     }
 
     @Override
     public void onSlide(@NonNull View bottomSheet, float slideOffset) {
-            float offset = interpolator.getInterpolation(slideOffset);
+        float offset = interpolator.getInterpolation(slideOffset);
 //        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 //            if (slideOffset > 0.99) {
 //                mContext.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
@@ -63,18 +84,19 @@ public class PlayingNowSheetCallback extends android.support.design.widget.Botto
 //        int offset = Math.round(mContext.getResources().getDimension(R.dimen.statusbar_margin)*slideOffset);
 //        params.setMargins(params.leftMargin, offset, params.rightMargin, Math.round(mContext.getResources().getDimension(R.dimen.statusbar_margin)) - offset);
 //        mContent.setLayoutParams(params);
+
         View fabParent = (View) mFab.getParent();
-        CoordinatorLayout.LayoutParams fabParams = (CoordinatorLayout.LayoutParams)mFab.getLayoutParams();
-        if(fabParams.gravity != Gravity.BOTTOM) {
+        CoordinatorLayout.LayoutParams fabParams = (CoordinatorLayout.LayoutParams) mFab.getLayoutParams();
+        if (fabParams.gravity != Gravity.BOTTOM) {
             mFab.setTranslationX(((fabParent.getWidth() - mFab.getWidth()) / 2 - mFab.getX() + mFab.getTranslationX()) * offset);
         } else {
-            mFab.setTranslationX(((fabParent.getWidth() - mFab.getWidth())/2 - fabParams.getMarginEnd()) * (1-offset));
+            mFab.setTranslationX(((fabParent.getWidth() - fabParams.width) / 2 - fabParams.getMarginEnd()) * (1 - offset));
         }
 //        View parent = (View) mTitle.getParent();
 //        int parentWidth = parent.getWidth();
 //        mTitle.setTranslationX(((parentWidth - mTitle.getWidth()) / 2 - mTitle.getX() + mTitle.getTranslationX()) * offset);
-        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams)mTitle.getLayoutParams();
-        params.horizontalBias = offset/2;
-        mTitle.setLayoutParams(params);
+//        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams)mTitle.getLayoutParams();
+//        params.horizontalBias = offset/2;
+//        mTitle.setLayoutParams(params);
     }
 }

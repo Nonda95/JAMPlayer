@@ -4,8 +4,6 @@ import android.Manifest;
 import android.content.Intent;
 import android.os.Bundle;
 
-import pl.osmalek.bartek.jamplayer.App;
-
 public class SplashActivity extends PermissionActivity {
 
     @Override
@@ -21,7 +19,6 @@ public class SplashActivity extends PermissionActivity {
 
     @Override
     protected void permissionGranted(int requestCode) {
-        App.get().permissionGranted();
         startActivity(new Intent(this, MainActivity.class));
         finish();
     }

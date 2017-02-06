@@ -8,8 +8,7 @@
     app:cardPreventCornerOverlap="false"
     android:clickable="true"
     app:cardElevation="0dp"
-    app:cardBackgroundColor="#fff0f0f0"
-    app:cardMaxElevation="0dp">
+    app:cardBackgroundColor="#fff0f0f0">
 
     <android.support.constraint.ConstraintLayout
         android:layout_width="match_parent"

@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.media.MediaBrowserCompat;
@@ -21,6 +22,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -70,6 +72,10 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
     ImageView cover;
     @BindView(R.id.seekBar)
     SeekBar seekBar;
+    @BindView(R.id.playingQueueButton)
+    ImageButton playingQueueButton;
+    @BindView(R.id.closeSheetButton)
+    ImageButton closeSheetButton;
 
     private BottomSheetBehavior mBottomSheetBehavior;
     private QueueListAdapter mQueueAdapter;
@@ -128,24 +134,31 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
         setSupportActionBar(toolbar);
         seekBar.setOnSeekBarChangeListener(onSeekBarChangeListener);
         mBottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
-        mBottomSheetBehavior.setBottomSheetCallback(mSheetCallback = new PlayingNowSheetCallback(this, bs_content, title, fab));
+        mBottomSheetBehavior.setBottomSheetCallback(mSheetCallback = new PlayingNowSheetCallback(this, bs_content, title, fab, playingQueueButton, closeSheetButton));
         queueList.setAdapter(mQueueAdapter = new QueueListAdapter(this, new ArrayList<>()));
         queueList.setOnItemClickListener((adapterView, view, i, l) -> MediaControllerCompat.getMediaController(MainActivity.this).getTransportControls().skipToQueueItem(l));
         if (savedInstanceState != null && savedInstanceState.getBoolean(PLAYING_NOW_EXPANDED, false)) {
             mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
             mSheetCallback.onStateChanged(bottomSheet, BottomSheetBehavior.STATE_EXPANDED);
         }
+        if (getSupportFragmentManager().findFragmentById(R.id.file_list_fragment_container) == null) {
+            getSupportFragmentManager().beginTransaction().add(R.id.file_list_fragment_container, BrowseFragment.newInstance()).commit();
+        }
+        title.setSelected(true);
         showPlayingNowIfNeeded(getIntent());
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
         mBrowserSubscription = App.get().getBrowserSubject()
                 .subscribe(mediaBrowserCompat -> {
                     mBrowser = mediaBrowserCompat;
                     browserReady();
                 });
+    }
+
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
     }
 
     @Override
@@ -156,10 +169,10 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
 
     @Override
     protected void onStop() {
-        if (mBrowserSubscription != null && !mBrowserSubscription.isDisposed())
-            mBrowserSubscription.dispose();
         super.onStop();
     }
+
+
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -194,20 +207,30 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
         //noinspection SimplifiableIfStatement
         switch (id) {
             case R.id.queueDrawer:
-                if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
-                    drawerLayout.closeDrawer(GravityCompat.END);
-                } else {
-                    drawerLayout.openDrawer(GravityCompat.END);
-                }
+                openPlayingQueue(null);
+                return true;
+            case R.id.action_settings:
+                startActivity(new Intent(this, SettingsActivity.class));
                 return true;
             default:
                 return false;
         }
     }
 
+    public void openPlayingQueue(View v) {
+        if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
+            drawerLayout.closeDrawer(GravityCompat.END);
+        } else {
+            drawerLayout.openDrawer(GravityCompat.END);
+        }
+    }
+
     @Override
     protected void onDestroy() {
+        if (mBrowserSubscription != null && !mBrowserSubscription.isDisposed())
+            mBrowserSubscription.dispose();
         mController.unregisterCallback(mControllerCallback);
+        stopSeekBarUpdate();
         super.onDestroy();
     }
 
@@ -216,11 +239,21 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
         if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
             drawerLayout.closeDrawer(GravityCompat.END);
         } else if (mBottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
-            mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+            closeBottomSheet(null);
         } else {
             if (!((BrowseFragment) getSupportFragmentManager().findFragmentById(R.id.file_list_fragment_container)).handleBackPressed())
                 super.onBackPressed();
         }
+    }
+
+    public void closeBottomSheet(View view) {
+        mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        playingQueueButton.setVisibility(View.INVISIBLE);
+        closeSheetButton.setVisibility(View.GONE);
+        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) title.getLayoutParams();
+        params.setMarginEnd(getResources().getDimensionPixelSize(R.dimen.titleEndMargin));
+        params.setMarginStart(getResources().getDimensionPixelSize(R.dimen.titleStartMargin));
+        title.setLayoutParams(params);
     }
 
     public void prevSong(View view) {
@@ -259,13 +292,9 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
     }
 
     public void browserReady() {
-
         try {
             mController = new MediaControllerCompat(MainActivity.this, mBrowser.getSessionToken());
             mController.registerCallback(mControllerCallback);
-            if (getSupportFragmentManager().findFragmentById(R.id.file_list_fragment_container) == null) {
-                getSupportFragmentManager().beginTransaction().add(R.id.file_list_fragment_container, BrowseFragment.newInstance(mBrowser.getRoot(), false)).commit();
-            }
             MediaControllerCompat.setMediaController(this, mController);
             mControllerCallback.onQueueChanged(mController.getQueue());
             mControllerCallback.onMetadataChanged(mController.getMetadata());

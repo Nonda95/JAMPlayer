@@ -87,4 +87,6 @@
     <string name="set_main_folder">Set main folder</string>
     <string name="cover_desc">Okładka albumu</string>
     <string name="more">Więcej</string>
+    <string name="no_music_text">No music selected</string>
+    <string name="close">Zamknij teraz odtwarzane</string>
 </resources>

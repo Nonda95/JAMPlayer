@@ -7,7 +7,6 @@
     android:clickable="true"
     app:cardBackgroundColor="#fff0f0f0"
     app:cardElevation="0dp"
-    app:cardMaxElevation="0dp"
     app:cardPreventCornerOverlap="false">
 
     <LinearLayout

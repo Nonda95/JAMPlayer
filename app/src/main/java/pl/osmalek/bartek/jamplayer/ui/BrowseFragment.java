@@ -61,7 +61,7 @@ public class BrowseFragment extends Fragment implements FileAdapter.OnFileClickL
 
     public static BrowseFragment newInstance() {
         final Bundle bundle = new Bundle();
-        bundle.putBoolean(HAS_PARENT, true);
+        bundle.putBoolean(HAS_PARENT, false);
         BrowseFragment fragment = new BrowseFragment();
         fragment.setArguments(bundle);
         return fragment;
