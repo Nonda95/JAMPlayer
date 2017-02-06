@@ -42,6 +42,7 @@ public class MusicService extends MediaBrowserServiceCompat implements Playback.
     public static final String CUSTOM_CMD_MEDIA_ID = "mediaId";
     public static final String CUSTOM_CMD_SET_MAIN_FOLDER = "set_default";
     public static final String CUSTOM_CMD_RESET_MAIN_FOLDER = "reset_default";
+    public static final String ROOT_ID = "rootId";
 
     private MediaSessionCompat mSession;
     private List<MediaSessionCompat.QueueItem> mPlayingQueue;
@@ -127,14 +128,20 @@ public class MusicService extends MediaBrowserServiceCompat implements Playback.
     @Nullable
     @Override
     public BrowserRoot onGetRoot(@NonNull String clientPackageName, int clientUid, @Nullable Bundle rootHints) {
-
-        return new BrowserRoot(mMusicProvider.getMainFolder().getMediaId(), null);
+        final Bundle bundle = new Bundle();
+        bundle.putString(ROOT_ID, mMusicProvider.getRootFolder().getMediaId());
+        return new BrowserRoot(mMusicProvider.getMainFolder().getMediaId(), bundle);
     }
 
     @Override
     public void onLoadChildren(@NonNull String parentId, @NonNull Result<List<MediaBrowserCompat.MediaItem>> result) {
         Folder folder = (Folder) mMusicProvider.getFileFromUri(parentId);
         result.sendResult(folder.getFilesAsMediaItem());
+    }
+
+    @Override
+    public void onLoadChildren(@NonNull String parentId, @NonNull Result<List<MediaBrowserCompat.MediaItem>> result, @NonNull Bundle options) {
+        super.onLoadChildren(parentId, result, options);
     }
 
     @Override

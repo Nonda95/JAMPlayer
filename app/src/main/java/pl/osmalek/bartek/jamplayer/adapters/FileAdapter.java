@@ -65,6 +65,7 @@ public class FileAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (holder instanceof ViewHolder) {
             ViewHolder vHolder = (ViewHolder) holder;
             MediaBrowserCompat.MediaItem mediaItem = mediaItems.get(position);
+            Glide.with(mContext).clear(vHolder.fileImage);
             if (mediaItem.isBrowsable()) {
                 vHolder.fileImage.setImageResource(R.drawable.ic_folder_primary_48dp);
             } else {

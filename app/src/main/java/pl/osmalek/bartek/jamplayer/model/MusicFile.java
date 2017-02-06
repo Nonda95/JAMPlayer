@@ -1,10 +1,16 @@
 package pl.osmalek.bartek.jamplayer.model;
 
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.ParcelFileDescriptor;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 
 import com.google.gson.annotations.Expose;
+
+import java.io.FileNotFoundException;
 
 public class MusicFile extends BaseFile {
     @Expose
@@ -86,9 +92,17 @@ public class MusicFile extends BaseFile {
         return false;
     }
 
-    public MediaMetadataCompat getAsMediaMetadataWithArt() {
+    public MediaMetadataCompat getAsMediaMetadataWithArt(Context context) {
+        Bitmap bitmap = null;
+        try {
+            ParcelFileDescriptor pfd = context.getContentResolver().openFileDescriptor(Uri.parse(albumArt), "r");
+            if (pfd != null)
+                bitmap = BitmapFactory.decodeFileDescriptor(pfd.getFileDescriptor());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
         return getMetadataBuilder()
-//                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, BitmapFactory.decodeFile(albumArt))
+                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bitmap)
                 .build();
     }
 }

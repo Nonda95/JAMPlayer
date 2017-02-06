@@ -132,6 +132,9 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
         ButterKnife.bind(this);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        if (getSupportFragmentManager().findFragmentById(R.id.file_list_fragment_container) == null) {
+            getSupportFragmentManager().beginTransaction().add(R.id.file_list_fragment_container, BrowseFragment.newInstance()).commit();
+        }
         seekBar.setOnSeekBarChangeListener(onSeekBarChangeListener);
         mBottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
         mBottomSheetBehavior.setBottomSheetCallback(mSheetCallback = new PlayingNowSheetCallback(this, bs_content, title, fab, playingQueueButton, closeSheetButton));
@@ -141,18 +144,18 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
             mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
             mSheetCallback.onStateChanged(bottomSheet, BottomSheetBehavior.STATE_EXPANDED);
         }
-        if (getSupportFragmentManager().findFragmentById(R.id.file_list_fragment_container) == null) {
-            getSupportFragmentManager().beginTransaction().add(R.id.file_list_fragment_container, BrowseFragment.newInstance()).commit();
-        }
         title.setSelected(true);
         showPlayingNowIfNeeded(getIntent());
         mBrowserSubscription = App.get().getBrowserSubject()
-                .subscribe(mediaBrowserCompat -> {
-                    mBrowser = mediaBrowserCompat;
-                    browserReady();
+                .subscribe(isBrowserReady -> {
+                    if (isBrowserReady) {
+                        mBrowser = App.get().getMediaBrowser();
+                        browserReady();
+                    } else {
+                        mBrowser = null;
+                    }
                 });
     }
-
 
 
     @Override
@@ -171,7 +174,6 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
     protected void onStop() {
         super.onStop();
     }
-
 
 
     @Override
@@ -209,9 +211,9 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
             case R.id.queueDrawer:
                 openPlayingQueue(null);
                 return true;
-            case R.id.action_settings:
-                startActivity(new Intent(this, SettingsActivity.class));
-                return true;
+//            case R.id.action_settings:
+//                startActivity(new Intent(this, SettingsActivity.class));
+//                return true;
             default:
                 return false;
         }

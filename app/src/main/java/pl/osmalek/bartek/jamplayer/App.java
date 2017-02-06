@@ -11,7 +11,7 @@ import pl.osmalek.bartek.jamplayer.mediaservice.MusicService;
 public class App extends Application {
 
     private static App instance;
-    private ReplaySubject<MediaBrowserCompat> mBrowserSubject;
+    private ReplaySubject<Boolean> mBrowserSubject;
     private MediaBrowserCompat mBrowser;
 
     @Override
@@ -25,18 +25,34 @@ public class App extends Application {
         return instance;
     }
 
-    public ReplaySubject<MediaBrowserCompat> getBrowserSubject() {
+    public ReplaySubject<Boolean> getBrowserSubject() {
         if(mBrowser == null) {
-            mBrowser = new MediaBrowserCompat(this, new ComponentName(this, MusicService.class), new MediaBrowserCompat.ConnectionCallback() {
-                @Override
-                public void onConnected() {
-                    mBrowserSubject.onNext(mBrowser);
-                    mBrowserSubject.onComplete();
-                }
-            }, null);
-            mBrowser.connect();
+            createAndConnectBrowser();
         }
         return mBrowserSubject;
+    }
+
+    public MediaBrowserCompat getMediaBrowser() {
+        return mBrowser;
+    }
+
+    public void reconnectBrowser() {
+        mBrowserSubject.onNext(false);
+        mBrowser.disconnect();
+        /*
+            Due to reconnect bug it has to be reinitialized
+         */
+        createAndConnectBrowser();
+    }
+
+    private void createAndConnectBrowser() {
+        mBrowser = new MediaBrowserCompat(this, new ComponentName(this, MusicService.class), new MediaBrowserCompat.ConnectionCallback() {
+            @Override
+            public void onConnected() {
+                mBrowserSubject.onNext(true);
+            }
+        }, null);
+        mBrowser.connect();
     }
 
     @Override

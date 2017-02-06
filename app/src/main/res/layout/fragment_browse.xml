@@ -16,4 +16,13 @@
         android:paddingTop="@dimen/activity_vertical_margin"
         tools:listitem="@layout/browse_item" />
 
+    <ProgressBar
+        style="@style/Widget.AppCompat.ProgressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/progressBar"
+        android:visibility="gone"
+        android:indeterminate="true"
+        android:layout_gravity="center" />
+
 </FrameLayout>

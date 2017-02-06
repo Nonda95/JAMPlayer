@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -14,9 +15,13 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 
 import java.util.List;
 
@@ -41,10 +46,13 @@ public class BrowseFragment extends Fragment implements FileAdapter.OnFileClickL
     View parent;
     @BindView(R.id.song_list)
     RecyclerView songList;
+    @BindView(R.id.progressBar)
+    ProgressBar progressBar;
     private FileAdapter fileAdapter;
     private String folderId;
     private boolean mHasParent;
     private MediaBrowserCompat mMediaBrowser;
+    private Menu menu;
 
     public BrowseFragment() {
         // Required empty public constructor
@@ -70,7 +78,7 @@ public class BrowseFragment extends Fragment implements FileAdapter.OnFileClickL
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        setHasOptionsMenu(true);
+        setHasOptionsMenu(true);
     }
 
     private void browserReady() {
@@ -78,12 +86,24 @@ public class BrowseFragment extends Fragment implements FileAdapter.OnFileClickL
         if (folderId == null) {
             folderId = mMediaBrowser.getRoot();
         }
+        prepareMenuVisibilityIfPossible();
         mMediaBrowser.subscribe(folderId, new MediaBrowserCompat.SubscriptionCallback() {
             @Override
             public void onChildrenLoaded(@NonNull String parentId, List<MediaBrowserCompat.MediaItem> children) {
+                progressBar.setVisibility(View.GONE);
                 fileAdapter.setMediaItems(children);
             }
         });
+    }
+
+    private void prepareMenuVisibilityIfPossible() {
+        if (mMediaBrowser != null && menu != null) {
+            String rootId = null;
+            if (mMediaBrowser.getExtras() != null)
+                rootId = mMediaBrowser.getExtras().getString(MusicService.ROOT_ID);
+            menu.findItem(R.id.setDefault).setVisible(!folderId.equals(rootId) && !folderId.equals(mMediaBrowser.getRoot()));
+            menu.findItem(R.id.restoreDefault).setVisible(!mMediaBrowser.getRoot().equals(rootId));
+        }
     }
 
     @Override
@@ -99,10 +119,15 @@ public class BrowseFragment extends Fragment implements FileAdapter.OnFileClickL
         fileAdapter = new FileAdapter(null, this, getContext(), mHasParent);
         songList.setAdapter(fileAdapter);
         App.get().getBrowserSubject()
-                .subscribe(mediaBrowserCompat -> {
-                    mMediaBrowser = mediaBrowserCompat;
-                    browserReady();
+                .subscribe(isBrowserReady -> {
+                    if (isBrowserReady) {
+                        mMediaBrowser = App.get().getMediaBrowser();
+                        browserReady();
+                    } else {
+                        mMediaBrowser = null;
+                    }
                 });
+        progressBar.setVisibility(View.VISIBLE);
         return parent;
     }
 
@@ -116,31 +141,36 @@ public class BrowseFragment extends Fragment implements FileAdapter.OnFileClickL
         super.onAttach(context);
     }
 
-    //    @Override
-//    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-//        menu.findItem(R.id.setDefault).setVisible(folder != mMusicProvider.getMainFolder());
-//        menu.findItem(R.id.restoreDefault).setVisible(mMusicProvider.getMainFolder() != mMusicProvider.getRootFolder());
-//        super.onCreateOptionsMenu(menu, inflater);
-//    }
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        this.menu = menu;
+        prepareMenuVisibilityIfPossible();
+        super.onCreateOptionsMenu(menu, inflater);
+    }
 
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        switch (item.getItemId()) {
-//            case R.id.setDefault:
-//                final Bundle bundle = new Bundle();
-//                bundle.putString(MusicService.CUSTOM_CMD_MEDIA_ID, folderId);
-//                MediaControllerCompat.getMediaController(getActivity()).getTransportControls().sendCustomAction(MusicService.CUSTOM_CMD_SET_MAIN_FOLDER, bundle);
-//                ((MainActivity) getActivity()).initFragment();
-//                break;
-//            case R.id.restoreDefault:
-//                MediaControllerCompat.getMediaController(getActivity()).getTransportControls().sendCustomAction(MusicService.CUSTOM_CMD_RESET_MAIN_FOLDER, null);
-//                ((MainActivity) getActivity()).initFragment();
-//                break;
-//            default:
-//                return false;
-//        }
-//        return true;
-//    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.setDefault:
+                final Bundle bundle = new Bundle();
+                bundle.putString(MusicService.CUSTOM_CMD_MEDIA_ID, folderId);
+                MediaControllerCompat.getMediaController(getActivity()).getTransportControls().sendCustomAction(MusicService.CUSTOM_CMD_SET_MAIN_FOLDER, bundle);
+                App.get().reconnectBrowser();
+                getFragmentManager().popBackStack(0, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+
+                getFragmentManager().beginTransaction().add(R.id.file_list_fragment_container, BrowseFragment.newInstance()).commit();
+                break;
+            case R.id.restoreDefault:
+                MediaControllerCompat.getMediaController(getActivity()).getTransportControls().sendCustomAction(MusicService.CUSTOM_CMD_RESET_MAIN_FOLDER, null);
+                App.get().reconnectBrowser();
+                getFragmentManager().popBackStack(0, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+                getFragmentManager().beginTransaction().add(R.id.file_list_fragment_container, BrowseFragment.newInstance()).commit();
+                break;
+            default:
+                return false;
+        }
+        return true;
+    }
 
     @Override
     public void onUpClick() {
