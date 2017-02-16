@@ -12,8 +12,8 @@
         android:background="#fff0f0f0"
         android:clipChildren="false"
         android:clipToPadding="false"
-        android:paddingBottom="72dp"
-        android:paddingTop="@dimen/activity_vertical_margin"
+        android:paddingBottom="@dimen/bottom_sheet_peek"
+        android:paddingTop="8dp"
         tools:listitem="@layout/browse_item" />
 
     <ProgressBar

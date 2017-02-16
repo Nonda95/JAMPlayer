@@ -50,7 +50,6 @@ public class MediaNotificationManager {
                 .setShowActionsInCompactView(1, 2)
                 .setMediaSession(mService.getSessionToken()));
         Notification notification = builder.build();
-
         if (isPlaying) {
             if (!mStarted) {
                 mService.startService(new Intent(mService.getApplicationContext(), MusicService.class));
@@ -61,5 +60,7 @@ public class MediaNotificationManager {
             mService.stopForeground(false);
             mNotificationManager.notify(NOTIFICATION_ID, notification);
         }
+
+
     }
 }

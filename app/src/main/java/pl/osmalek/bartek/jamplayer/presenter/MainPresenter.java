@@ -81,7 +81,7 @@ public class MainPresenter implements Presenter<MainActivity> {
     private void updateActivityMediaMetadata() {
         if (mCurrentMedia != null) {
             int max = (int) mCurrentMedia.getLong(MediaMetadataCompat.METADATA_KEY_DURATION);
-            mActivity.setMaxProgress(max);
+            //mActivity.setMaxProgress(max);
             mActivity.setSongTitle(mCurrentMedia.getDescription().getTitle());
             mActivity.updateProgress(0);
         }

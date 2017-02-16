@@ -83,10 +83,23 @@
     <string name="pref_ringtone_silent">Silent</string>
 
     <string name="pref_title_vibrate">Vibrate</string>
+
     <string name="add_to_queue">Dodaj do kolejki</string>
-    <string name="set_main_folder">Set main folder</string>
+    <string name="set_main_folder">Ustaw folder jako główny</string>
+    <string name="reset_main_folder">Zresetuj główny folder</string>
     <string name="cover_desc">Okładka albumu</string>
     <string name="more">Więcej</string>
-    <string name="no_music_text">No music selected</string>
+    <string name="no_music_text">Nie wybrano utworu</string>
     <string name="close">Zamknij teraz odtwarzane</string>
+    <string name="play_next">Odtwórz jako następne</string>
+    <string name="about_song">Informacje o utworze</string>
+    <string name="OK">OK</string>
+    <string name="title">Tytuł: %s</string>
+    <string name="author">Autor: %s</string>
+    <string name="trackNo">Numer utworu: %s</string>
+    <string name="album">Album: %s</string>
+    <string name="year">Rok produkcji: %s</string>
+    <string name="source">Ścieżka do pliku: %s</string>
+    <string name="duration_info">Długość: %1$d:%2$02d</string>
+    <string name="duration">%1$3d:%2$02d</string>
 </resources>

@@ -20,15 +20,17 @@ public class PlayingNowSheetCallback extends android.support.design.widget.Botto
     private FloatingActionButton mFab;
     private ImageButton mPlayingQueueButton;
     private ImageButton mCloseSheetButton;
+    private TextView mArtist;
     private AccelerateDecelerateInterpolator interpolator;
 
-    public PlayingNowSheetCallback(AppCompatActivity context, LinearLayout content, TextView title, FloatingActionButton fab, ImageButton playingQueueButton, ImageButton closeSheetButton) {
+    public PlayingNowSheetCallback(AppCompatActivity context, TextView title, FloatingActionButton fab, ImageButton playingQueueButton, ImageButton closeSheetButton, TextView artist) {
         mContext = context;
-        mContent = content;
+//        mContent = content;
         mTitle = title;
         mFab = fab;
         mPlayingQueueButton = playingQueueButton;
         mCloseSheetButton = closeSheetButton;
+        mArtist = artist;
         interpolator = new AccelerateDecelerateInterpolator();
     }
 
@@ -45,6 +47,7 @@ public class PlayingNowSheetCallback extends android.support.design.widget.Botto
             params.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.titleExpandedMargin));
             params.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.titleExpandedMargin));
             mTitle.setLayoutParams(params);
+            mArtist.setVisibility(View.VISIBLE);
         } else if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
 //            mPlayingQueueButton.setVisibility(View.INVISIBLE);
 //            mCloseSheetButton.setVisibility(View.GONE);
@@ -52,15 +55,23 @@ public class PlayingNowSheetCallback extends android.support.design.widget.Botto
 //            params.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.titleEndMargin));
 //            params.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.titleStartMargin));
 //            mTitle.setLayoutParams(params);
+            mPlayingQueueButton.setVisibility(View.INVISIBLE);
+            mCloseSheetButton.setVisibility(View.GONE);
+            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) mTitle.getLayoutParams();
+            params.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.titleEndMargin));
+            params.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.titleStartMargin));
+            mTitle.setLayoutParams(params);
             fabParams.gravity = Gravity.END | Gravity.BOTTOM;
             mFab.setLayoutParams(fabParams);
             mFab.setTranslationX(0);
+            mArtist.setVisibility(View.GONE);
 //            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams)mTitle.getLayoutParams();
 //            params.horizontalBias = 0;
 //            mTitle.setLayoutParams(params);
         } else if (newState == BottomSheetBehavior.STATE_DRAGGING) {
             mPlayingQueueButton.setVisibility(View.INVISIBLE);
             mCloseSheetButton.setVisibility(View.GONE);
+            mArtist.setVisibility(View.GONE);
             ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) mTitle.getLayoutParams();
             params.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.titleEndMargin));
             params.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.titleStartMargin));

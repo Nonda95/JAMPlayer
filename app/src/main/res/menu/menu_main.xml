@@ -6,16 +6,16 @@
         app:showAsAction="ifRoom"
         android:icon="@drawable/ic_queue_music_white_24dp"
         android:id="@+id/queueDrawer" />
-    <item android:title="Set main folder"
+    <item android:title="@string/set_main_folder"
         android:id="@+id/setDefault"
         android:visible="false"
         app:showAsAction="never" />
     <item android:id="@+id/restoreDefault"
-        android:title="Reset main folder"
+        android:title="@string/reset_main_folder"
         android:visible="false"
         app:showAsAction="never" />
-    <item android:id="@+id/action_settings"
-        android:title="@string/action_settings"
-        android:orderInCategory="100"
-        app:showAsAction="never" />
+    <!--<item android:id="@+id/action_settings"-->
+        <!--android:title="@string/action_settings"-->
+        <!--android:orderInCategory="100"-->
+        <!--app:showAsAction="never" />-->
 </menu>

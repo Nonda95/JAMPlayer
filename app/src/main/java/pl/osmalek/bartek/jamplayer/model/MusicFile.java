@@ -2,15 +2,14 @@ package pl.osmalek.bartek.jamplayer.model;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.ParcelFileDescriptor;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 
+import com.bumptech.glide.Glide;
 import com.google.gson.annotations.Expose;
 
-import java.io.FileNotFoundException;
+import java.util.concurrent.ExecutionException;
 
 public class MusicFile extends BaseFile {
     @Expose
@@ -26,11 +25,15 @@ public class MusicFile extends BaseFile {
     @Expose
     String trackNumber;
     @Expose
-    private String path;
+    String path;
+    @Expose
+    String album;
     @Expose
     String albumArt;
+    @Expose
+    long year;
 
-    public MusicFile(String mediaId, long track_id, String filename, Uri path, String artist, String title, long albumId, long duration, String trackNumber, String albumArt) {
+    public MusicFile(String mediaId, long track_id, String filename, Uri path, String artist, String title, long albumId, long duration, String trackNumber, String album, String albumArt, long year) {
         super(mediaId, filename);
         this.trackId = track_id;
         this.path = path.toString();
@@ -39,7 +42,9 @@ public class MusicFile extends BaseFile {
         this.albumId = albumId;
         this.duration = duration;
         this.trackNumber = trackNumber;
+        this.album = album;
         this.albumArt = albumArt;
+        this.year = year;
     }
 
     public String getArtist() {
@@ -81,6 +86,8 @@ public class MusicFile extends BaseFile {
                 .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, path)
                 .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
                 .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
+                .putLong(MediaMetadataCompat.METADATA_KEY_YEAR, year)
                 .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, albumArt)
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title != null ? title : getFilename())
                 .putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, Long.valueOf(trackNumber))
@@ -95,10 +102,9 @@ public class MusicFile extends BaseFile {
     public MediaMetadataCompat getAsMediaMetadataWithArt(Context context) {
         Bitmap bitmap = null;
         try {
-            ParcelFileDescriptor pfd = context.getContentResolver().openFileDescriptor(Uri.parse(albumArt), "r");
-            if (pfd != null)
-                bitmap = BitmapFactory.decodeFileDescriptor(pfd.getFileDescriptor());
-        } catch (FileNotFoundException e) {
+
+            bitmap = Glide.with(context).asBitmap().load(albumArt).submit(400, 400).get();
+        } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
         return getMetadataBuilder()

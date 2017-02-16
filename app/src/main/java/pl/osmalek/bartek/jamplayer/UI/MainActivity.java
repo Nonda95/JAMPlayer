@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.RemoteException;
 import android.os.SystemClock;
-import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.media.MediaBrowserCompat;
@@ -17,6 +16,7 @@ import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.content.res.AppCompatResources;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
@@ -24,7 +24,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -36,6 +35,7 @@ import com.github.florent37.glidepalette.GlidePalette;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -60,8 +60,8 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
     View bottomSheet;
     @BindView(R.id.fab)
     FloatingActionButton fab;
-    @BindView(R.id.bs_content)
-    LinearLayout bs_content;
+    //    @BindView(R.id.bs_content)
+//    LinearLayout bs_content;
     @BindView(R.id.queueList)
     ListView queueList;
     @BindView(R.id.drawer)
@@ -76,6 +76,12 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
     ImageButton playingQueueButton;
     @BindView(R.id.closeSheetButton)
     ImageButton closeSheetButton;
+    @BindView(R.id.subtitle_playing_now)
+    TextView artist;
+    @BindView(R.id.duration)
+    TextView duration;
+    @BindView(R.id.position)
+    TextView position;
 
     private BottomSheetBehavior mBottomSheetBehavior;
     private QueueListAdapter mQueueAdapter;
@@ -88,10 +94,11 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
 
     private final Handler mHandler = new Handler();
     private final Runnable mUpdateProgressTask = this::updateProgress;
+    private InfoDialogWrapper mInfoDialogWrapper;
 
     private void updateProgress() {
         long progress = SystemClock.elapsedRealtime() - mLastState.getLastPositionUpdateTime();
-        updateProgress((int) (mLastState.getPosition() + progress));
+        updateProgress((int) (mLastState.getPosition() + progress) / 1000);
     }
 
     private final ScheduledExecutorService mExecutorService =
@@ -100,6 +107,7 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
     private ScheduledFuture<?> mScheduleFuture;
 
     public void updateProgress(int progress) {
+        setPosition(progress);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             seekBar.setProgress(progress, true);
         } else {
@@ -110,7 +118,7 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
     private final SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener() {
         @Override
         public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-
+            setPosition(i);
         }
 
         @Override
@@ -120,7 +128,7 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
 
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
-            MediaControllerCompat.getMediaController(MainActivity.this).getTransportControls().seekTo(seekBar.getProgress());
+            MediaControllerCompat.getMediaController(MainActivity.this).getTransportControls().seekTo(seekBar.getProgress()*1000);
         }
     };
 
@@ -135,9 +143,10 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
         if (getSupportFragmentManager().findFragmentById(R.id.file_list_fragment_container) == null) {
             getSupportFragmentManager().beginTransaction().add(R.id.file_list_fragment_container, BrowseFragment.newInstance()).commit();
         }
+        mInfoDialogWrapper = new InfoDialogWrapper(this);
         seekBar.setOnSeekBarChangeListener(onSeekBarChangeListener);
         mBottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
-        mBottomSheetBehavior.setBottomSheetCallback(mSheetCallback = new PlayingNowSheetCallback(this, bs_content, title, fab, playingQueueButton, closeSheetButton));
+        mBottomSheetBehavior.setBottomSheetCallback(mSheetCallback = new PlayingNowSheetCallback(this, title, fab, playingQueueButton, closeSheetButton, artist));
         queueList.setAdapter(mQueueAdapter = new QueueListAdapter(this, new ArrayList<>()));
         queueList.setOnItemClickListener((adapterView, view, i, l) -> MediaControllerCompat.getMediaController(MainActivity.this).getTransportControls().skipToQueueItem(l));
         if (savedInstanceState != null) {
@@ -199,6 +208,7 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.menu_more, menu);
         return true;
     }
 
@@ -253,12 +263,13 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
 
     public void closeBottomSheet(View view) {
         mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-        playingQueueButton.setVisibility(View.INVISIBLE);
-        closeSheetButton.setVisibility(View.GONE);
-        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) title.getLayoutParams();
-        params.setMarginEnd(getResources().getDimensionPixelSize(R.dimen.titleEndMargin));
-        params.setMarginStart(getResources().getDimensionPixelSize(R.dimen.titleStartMargin));
-        title.setLayoutParams(params);
+        mSheetCallback.onStateChanged(bottomSheet, BottomSheetBehavior.STATE_COLLAPSED);
+//        playingQueueButton.setVisibility(View.INVISIBLE);
+//        closeSheetButton.setVisibility(View.GONE);
+//        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) title.getLayoutParams();
+//        params.setMarginEnd(getResources().getDimensionPixelSize(R.dimen.titleEndMargin));
+//        params.setMarginStart(getResources().getDimensionPixelSize(R.dimen.titleStartMargin));
+//        title.setLayoutParams(params);
     }
 
     public void prevSong(View view) {
@@ -267,6 +278,11 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
 
     public void nextSong(View view) {
         MediaControllerCompat.getMediaController(this).getTransportControls().skipToNext();
+    }
+
+    public void showTrackInfo(View view) {
+        MediaMetadataCompat metadata = mController.getMetadata();
+        mInfoDialogWrapper.show(metadata);
     }
 
     public void onBottomSheetClick(View v) {
@@ -288,11 +304,17 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
         title.setText(songTitle);
     }
 
-    public void setMaxProgress(int maxProgress) {
-        seekBar.setMax(maxProgress);
+    public void setSongArtist(CharSequence songArtist) {
+        artist.setText(songArtist);
+    }
+
+    public void setDuration(int duration) {
+        seekBar.setMax(duration);
+        this.duration.setText(String.format(Locale.getDefault(), getString(R.string.duration), duration / 60, duration % 60));
     }
 
     public void setPlayingQueue(List<MediaSessionCompat.QueueItem> queueAdapter) {
+
         mQueueAdapter.setQueue(queueAdapter);
     }
 
@@ -327,7 +349,7 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
 
     private void loadCover(MediaMetadataCompat metadata) {
         Glide.with(this).load(metadata.getDescription().getIconUri())
-                .apply(RequestOptions.errorOf(R.drawable.ic_album_primary_48dp))
+                .apply(RequestOptions.errorOf(AppCompatResources.getDrawable(this, R.drawable.ic_album_primary_48dp)))
                 .listener(GlidePalette.with(metadata.getDescription().getIconUri() != null ? metadata.getDescription().getIconUri().toString() : null)
                         .use(GlidePalette.Profile.MUTED_LIGHT)
                         .crossfade(true)
@@ -336,13 +358,17 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
                 .into(cover);
     }
 
+    public void setPosition(int position) {
+        this.position.setText(String.format(Locale.getDefault(), "%-5s", String.format(Locale.getDefault(), "%d:%02d", position / 60, position % 60)));
+    }
+
     private class MediaControllerCallback extends MediaControllerCompat.Callback {
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
             if (state != null) {
                 mLastState = state;
                 setPlayButton(mLastState.getState() == PlaybackStateCompat.STATE_PLAYING);
-                updateProgress((int) state.getPosition());
+                updateProgress((int) state.getPosition() / 1000);
                 mQueueAdapter.setCurrentMediaIndex(state.getActiveQueueItemId());
                 if (!drawerLayout.isDrawerOpen(GravityCompat.END))
                     queueList.smoothScrollToPosition((int) state.getActiveQueueItemId());
@@ -358,14 +384,14 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
             if (queue != null) {
                 setPlayingQueue(queue);
             }
-
         }
 
         @Override
         public void onMetadataChanged(MediaMetadataCompat metadata) {
             if (metadata != null) {
                 setSongTitle(metadata.getDescription().getTitle());
-                setMaxProgress((int) metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
+                setSongArtist(metadata.getDescription().getSubtitle());
+                setDuration((int) metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION) / 1000);
                 updateProgress(0);
                 if (!isDestroyed())
                     loadCover(metadata);

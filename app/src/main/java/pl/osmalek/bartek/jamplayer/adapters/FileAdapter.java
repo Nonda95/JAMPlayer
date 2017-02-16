@@ -3,6 +3,7 @@ package pl.osmalek.bartek.jamplayer.adapters;
 import android.content.Context;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
+import android.support.v7.content.res.AppCompatResources;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,13 +26,13 @@ import pl.osmalek.bartek.jamplayer.R;
 public class FileAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final int HEADER_TYPE = 1;
     private static final int LIST_TYPE = 2;
-    private List<MediaBrowserCompat.MediaItem> mediaItems;
+    private List<MediaBrowserCompat.MediaItem> mMediaItems;
     private OnFileClickListener listener;
     private Context mContext;
     private boolean mHasParent;
 
     public FileAdapter(List<MediaBrowserCompat.MediaItem> mediaItems, OnFileClickListener listener, Context context, boolean hasParent) {
-        this.mediaItems = mediaItems;
+        this.mMediaItems = mediaItems;
         this.listener = listener;
         mContext = context;
         mHasParent = hasParent;
@@ -64,13 +65,13 @@ public class FileAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
         if (holder instanceof ViewHolder) {
             ViewHolder vHolder = (ViewHolder) holder;
-            MediaBrowserCompat.MediaItem mediaItem = mediaItems.get(position);
+            MediaBrowserCompat.MediaItem mediaItem = mMediaItems.get(position);
             Glide.with(mContext).clear(vHolder.fileImage);
             if (mediaItem.isBrowsable()) {
                 vHolder.fileImage.setImageResource(R.drawable.ic_folder_primary_48dp);
             } else {
                 Glide.with(mContext).load(mediaItem.getDescription().getIconUri())
-                        .apply(RequestOptions.placeholderOf(R.drawable.ic_album_primary_48dp).circleCrop(mContext))
+                        .apply(RequestOptions.placeholderOf(AppCompatResources.getDrawable(mContext, R.drawable.ic_album_primary_48dp)).circleCrop(mContext))
                         .transition(DrawableTransitionOptions.withCrossFade())
                         //.bitmapTransform(new CropCircleTransformation(mContext))
                         //.placeholder(R.drawable.ic_album_primary_48dp)
@@ -85,16 +86,18 @@ public class FileAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public int getItemCount() {
-        return mediaItems != null ? mediaItems.size() + (mHasParent ? 1 : 0) : 0;
+        return mMediaItems != null ? mMediaItems.size() + (mHasParent ? 1 : 0) : 0;
     }
 
     public void setMediaItems(List<MediaBrowserCompat.MediaItem> mediaItems) {
-        this.mediaItems = mediaItems;
-        notifyDataSetChanged();
+        if (mMediaItems == null || !mMediaItems.equals(mediaItems)) {
+            mMediaItems = mediaItems;
+            notifyDataSetChanged();
+        }
     }
 
     public List<MediaBrowserCompat.MediaItem> getMediaItems() {
-        return mediaItems;
+        return mMediaItems;
     }
 
     public class ParentViewHolder extends RecyclerView.ViewHolder {
@@ -140,7 +143,7 @@ public class FileAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (mHasParent) {
                 position--;
             }
-            MediaBrowserCompat.MediaItem mediaItem = mediaItems.get(position);
+            MediaBrowserCompat.MediaItem mediaItem = mMediaItems.get(position);
             if (mediaItem.isBrowsable()) {
                 listener.onFolderClick(mediaItem.getDescription());
             } else {

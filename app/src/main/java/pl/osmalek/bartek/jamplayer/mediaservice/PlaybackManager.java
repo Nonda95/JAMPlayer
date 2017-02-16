@@ -56,6 +56,7 @@ class PlaybackManager implements Playback, AudioManager.OnAudioFocusChangeListen
             }
         }
     };
+    private PlaybackStateCompat.Builder mStateBuilder;
 
     PlaybackManager(MusicService mService) {
         this.mService = mService;
@@ -148,8 +149,8 @@ class PlaybackManager implements Playback, AudioManager.OnAudioFocusChangeListen
 
                 mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
                 mMediaPlayer.setDataSource(mService, source);
-
                 mMediaPlayer.prepareAsync();
+
 
                 updatePlaybackState();
             } catch (IOException e) {
@@ -161,7 +162,7 @@ class PlaybackManager implements Playback, AudioManager.OnAudioFocusChangeListen
 
     private void relaxResources(boolean releasePlayer) {
         mService.stopForeground(true);
-        if(releasePlayer && mMediaPlayer != null) {
+        if (releasePlayer && mMediaPlayer != null) {
             mMediaPlayer.reset();
             mMediaPlayer.release();
             mMediaPlayer = null;
@@ -169,7 +170,7 @@ class PlaybackManager implements Playback, AudioManager.OnAudioFocusChangeListen
     }
 
     private void createMediaPlayerIfNeeded() {
-        if(mMediaPlayer == null) {
+        if (mMediaPlayer == null) {
             mMediaPlayer = new MediaPlayer();
             mMediaPlayer.setWakeMode(mService, PowerManager.PARTIAL_WAKE_LOCK);
             mMediaPlayer.setOnCompletionListener(this);
@@ -181,21 +182,21 @@ class PlaybackManager implements Playback, AudioManager.OnAudioFocusChangeListen
     }
 
     private void configMediaPlayerState() {
-        if(mAudioFocus == AUDIO_NO_FOCUS_NO_DUCK) {
-            if(mState == PlaybackStateCompat.STATE_PLAYING) {
+        if (mAudioFocus == AUDIO_NO_FOCUS_NO_DUCK) {
+            if (mState == PlaybackStateCompat.STATE_PLAYING) {
                 pause();
             }
         } else {
-            if(mAudioFocus == AUDIO_NO_FOCUS_CAN_DUCK) {
+            if (mAudioFocus == AUDIO_NO_FOCUS_CAN_DUCK) {
                 mMediaPlayer.setVolume(VOLUME_DUCK, VOLUME_DUCK);
             } else {
                 if (mMediaPlayer != null) {
-                    mMediaPlayer.setVolume(VOLUME_NORMAL,VOLUME_NORMAL);
+                    mMediaPlayer.setVolume(VOLUME_NORMAL, VOLUME_NORMAL);
                 }
             }
-            if(mPlayOnFocusGain) {
-                if(mMediaPlayer != null && !mMediaPlayer.isPlaying()) {
-                    if(mCurrentPosition == mMediaPlayer.getCurrentPosition()) {
+            if (mPlayOnFocusGain) {
+                if (mMediaPlayer != null && !mMediaPlayer.isPlaying()) {
+                    if (mCurrentPosition == mMediaPlayer.getCurrentPosition()) {
                         mMediaPlayer.start();
                         mState = PlaybackStateCompat.STATE_PLAYING;
                     } else {
@@ -299,13 +300,16 @@ class PlaybackManager implements Playback, AudioManager.OnAudioFocusChangeListen
         if (mCallback == null) {
             return;
         }
-        PlaybackStateCompat.Builder builder = new PlaybackStateCompat.Builder().setActions(
-                PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PLAY_PAUSE |
-                        PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID | PlaybackStateCompat.ACTION_PAUSE |
-                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
-        builder.setState(mState, getCurrentStreamPosition(), 1.0f, SystemClock.elapsedRealtime());
-        builder.setActiveQueueItemId(mCurrentMedia != null ? mCurrentMedia.getQueueId() : 0);
-        mCallback.onPlaybackStatusChanged(builder.build());
+        if (mStateBuilder == null) {
+            mStateBuilder = new PlaybackStateCompat.Builder().setActions(
+                    PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PLAY_PAUSE |
+                            PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID | PlaybackStateCompat.ACTION_PAUSE |
+                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS |
+                            PlaybackStateCompat.ACTION_STOP);
+        }
+        mStateBuilder.setState(mState, getCurrentStreamPosition(), 1.0f, SystemClock.elapsedRealtime());
+        mStateBuilder.setActiveQueueItemId(mCurrentMedia != null ? mCurrentMedia.getQueueId() : 0);
+        mCallback.onPlaybackStatusChanged(mStateBuilder.build());
 
     }
 }

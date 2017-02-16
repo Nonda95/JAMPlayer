@@ -35,7 +35,7 @@ public class MusicProvider implements Serializable {
 
 
     public synchronized void prepare() {
-        if(!ready) {
+        if (!ready) {
             ready = true;
             rootFolder = LibraryCreator.prepareStore(mContext);
             restoreMainFolder();
@@ -101,6 +101,16 @@ public class MusicProvider implements Serializable {
         return queue;
     }
 
+    public void addNextToQueue(@NonNull List<MediaSessionCompat.QueueItem> queue, int indexOnQueue, List<MusicFile> songs) {
+        int i = indexOnQueue + 1;
+        for (MusicFile song : songs) {
+            queue.add(i, new MediaSessionCompat.QueueItem(song.getAsMediaMetadata().getDescription(), i++));
+        }
+        for (; i < queue.size(); i++) {
+            queue.set(i, new MediaSessionCompat.QueueItem(queue.get(i).getDescription(), i));
+        }
+    }
+
     public List<String> getIdsFromQueue(@NonNull List<MediaSessionCompat.QueueItem> queue) {
         List<String> result = new ArrayList<>();
         for (MediaSessionCompat.QueueItem item : queue) {
@@ -147,9 +157,5 @@ public class MusicProvider implements Serializable {
 
     public Folder getRootFolder() {
         return rootFolder;
-    }
-
-    public interface OnPreparedCallback {
-        void onPrepared(boolean success);
     }
 }

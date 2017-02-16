@@ -5,4 +5,6 @@
         android:id="@+id/playFile" />
     <item android:title="@string/add_to_queue"
         android:id="@+id/addToQueue"/>
+    <item android:title="@string/play_next"
+        android:id="@+id/playNext"/>
 </menu>

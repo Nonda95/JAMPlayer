@@ -2,6 +2,7 @@ package pl.osmalek.bartek.jamplayer.ui;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -27,6 +28,7 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import io.reactivex.disposables.Disposable;
 import pl.osmalek.bartek.jamplayer.App;
 import pl.osmalek.bartek.jamplayer.R;
 import pl.osmalek.bartek.jamplayer.adapters.FileAdapter;
@@ -43,6 +45,7 @@ public class BrowseFragment extends Fragment implements FileAdapter.OnFileClickL
     private static final String FOLDER_ID = "folderId";
     private static final int LOADER_ID = 11;
     private static final String HAS_PARENT = "hasParent";
+    private static final String LIST_STATE = "listPosition";
     View parent;
     @BindView(R.id.song_list)
     RecyclerView songList;
@@ -53,6 +56,8 @@ public class BrowseFragment extends Fragment implements FileAdapter.OnFileClickL
     private boolean mHasParent;
     private MediaBrowserCompat mMediaBrowser;
     private Menu menu;
+    private Parcelable listState;
+    private Disposable mBrowserSubscription;
 
     public BrowseFragment() {
         // Required empty public constructor
@@ -92,6 +97,8 @@ public class BrowseFragment extends Fragment implements FileAdapter.OnFileClickL
             public void onChildrenLoaded(@NonNull String parentId, List<MediaBrowserCompat.MediaItem> children) {
                 progressBar.setVisibility(View.GONE);
                 fileAdapter.setMediaItems(children);
+                songList.getLayoutManager().onRestoreInstanceState(listState);
+                //songList.getLayoutManager().scrollToPosition(scrollPosition);
             }
         });
     }
@@ -118,7 +125,10 @@ public class BrowseFragment extends Fragment implements FileAdapter.OnFileClickL
         mHasParent = getArguments().getBoolean(HAS_PARENT);
         fileAdapter = new FileAdapter(null, this, getContext(), mHasParent);
         songList.setAdapter(fileAdapter);
-        App.get().getBrowserSubject()
+        if (savedInstanceState != null) {
+            listState = savedInstanceState.getParcelable(LIST_STATE);
+        }
+        mBrowserSubscription = App.get().getBrowserSubject()
                 .subscribe(isBrowserReady -> {
                     if (isBrowserReady) {
                         mMediaBrowser = App.get().getMediaBrowser();
@@ -132,13 +142,29 @@ public class BrowseFragment extends Fragment implements FileAdapter.OnFileClickL
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putParcelable(LIST_STATE, songList.getLayoutManager().onSaveInstanceState());
+        super.onSaveInstanceState(outState);
     }
 
     @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
+    public void onStart() {
+        super.onStart();
+        songList.getLayoutManager().onRestoreInstanceState(listState);
+    }
+
+    @Override
+    public void onStop() {
+        listState = songList.getLayoutManager().onSaveInstanceState();
+        super.onStop();
+    }
+
+    @Override
+    public void onDestroyView() {
+        if (mBrowserSubscription != null && !mBrowserSubscription.isDisposed()) {
+            mBrowserSubscription.dispose();
+        }
+        super.onDestroyView();
     }
 
     @Override
@@ -150,26 +176,39 @@ public class BrowseFragment extends Fragment implements FileAdapter.OnFileClickL
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        final Bundle bundle = new Bundle();
+        bundle.putString(MusicService.CUSTOM_CMD_MEDIA_ID, folderId);
         switch (item.getItemId()) {
             case R.id.setDefault:
-                final Bundle bundle = new Bundle();
-                bundle.putString(MusicService.CUSTOM_CMD_MEDIA_ID, folderId);
                 MediaControllerCompat.getMediaController(getActivity()).getTransportControls().sendCustomAction(MusicService.CUSTOM_CMD_SET_MAIN_FOLDER, bundle);
                 App.get().reconnectBrowser();
                 getFragmentManager().popBackStack(0, FragmentManager.POP_BACK_STACK_INCLUSIVE);
 
-                getFragmentManager().beginTransaction().add(R.id.file_list_fragment_container, BrowseFragment.newInstance()).commit();
-                break;
+                getFragmentManager().beginTransaction().replace(R.id.file_list_fragment_container, BrowseFragment.newInstance()).commit();
+                return true;
             case R.id.restoreDefault:
                 MediaControllerCompat.getMediaController(getActivity()).getTransportControls().sendCustomAction(MusicService.CUSTOM_CMD_RESET_MAIN_FOLDER, null);
                 App.get().reconnectBrowser();
                 getFragmentManager().popBackStack(0, FragmentManager.POP_BACK_STACK_INCLUSIVE);
-                getFragmentManager().beginTransaction().add(R.id.file_list_fragment_container, BrowseFragment.newInstance()).commit();
-                break;
+                getFragmentManager().beginTransaction().replace(R.id.file_list_fragment_container, BrowseFragment.newInstance()).commit();
+                return true;
+            case R.id.addToQueue:
+                MediaControllerCompat.getMediaController(getActivity()).getTransportControls()
+                        .sendCustomAction(MusicService.CUSTOM_CMD_ADD_TO_QUEUE, bundle);
+                Log.i(null, "Add to queue action sent");
+                return true;
+            case R.id.playFile:
+                MediaControllerCompat.getMediaController(getActivity()).getTransportControls()
+                        .sendCustomAction(MusicService.CUSTOM_CMD_PLAY, bundle);
+                return true;
+            case R.id.playNext:
+                MediaControllerCompat.getMediaController(getActivity()).getTransportControls()
+                        .sendCustomAction(MusicService.CUSTOM_CMD_PLAY_NEXT, bundle);
+                Log.i(null, "Play next action sent");
+                return true;
             default:
                 return false;
         }
-        return true;
     }
 
     @Override
@@ -219,13 +258,22 @@ public class BrowseFragment extends Fragment implements FileAdapter.OnFileClickL
         menu.setGravity(Gravity.TOP | Gravity.END);
         menu.getMenuInflater().inflate(R.menu.menu_more, menu.getMenu());
         menu.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == R.id.addToQueue || item.getItemId() == R.id.playFile) {
-                Bundle bundle = new Bundle();
-                bundle.putString(MusicService.CUSTOM_CMD_MEDIA_ID, mediaItem.getMediaId());
-                MediaControllerCompat.getMediaController(getActivity()).getTransportControls()
-                        .sendCustomAction(item.getItemId() == R.id.addToQueue ?
-                                MusicService.CUSTOM_CMD_ADD_TO_QUEUE : MusicService.CUSTOM_CMD_PLAY, bundle);
-                Log.i(null, "Custom action sent");
+            Bundle bundle = new Bundle();
+            bundle.putString(MusicService.CUSTOM_CMD_MEDIA_ID, mediaItem.getMediaId());
+            switch (item.getItemId()) {
+                case R.id.addToQueue:
+                    MediaControllerCompat.getMediaController(getActivity()).getTransportControls()
+                            .sendCustomAction(MusicService.CUSTOM_CMD_ADD_TO_QUEUE, bundle);
+                    Log.i(null, "Add to queue action sent");
+                    return true;
+                case R.id.playFile:
+                    MediaControllerCompat.getMediaController(getActivity()).getTransportControls()
+                            .sendCustomAction(MusicService.CUSTOM_CMD_PLAY, bundle);
+                    return true;
+                case R.id.playNext:
+                    MediaControllerCompat.getMediaController(getActivity()).getTransportControls()
+                            .sendCustomAction(MusicService.CUSTOM_CMD_PLAY_NEXT, bundle);
+                    return true;
             }
             return false;
         });
