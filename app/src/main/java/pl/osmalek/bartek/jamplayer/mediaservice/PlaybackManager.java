@@ -149,10 +149,10 @@ class PlaybackManager implements Playback, AudioManager.OnAudioFocusChangeListen
 
                 mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
                 mMediaPlayer.setDataSource(mService, source);
-                mMediaPlayer.prepareAsync();
+                mMediaPlayer.prepare();
+                onPrepared(mMediaPlayer);
 
 
-                updatePlaybackState();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -174,7 +174,7 @@ class PlaybackManager implements Playback, AudioManager.OnAudioFocusChangeListen
             mMediaPlayer = new MediaPlayer();
             mMediaPlayer.setWakeMode(mService, PowerManager.PARTIAL_WAKE_LOCK);
             mMediaPlayer.setOnCompletionListener(this);
-            mMediaPlayer.setOnPreparedListener(this);
+//            mMediaPlayer.setOnPreparedListener(this);
             mMediaPlayer.setOnSeekCompleteListener(this);
         } else {
             mMediaPlayer.reset();

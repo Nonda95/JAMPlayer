@@ -189,7 +189,9 @@ public class MusicService extends MediaBrowserServiceCompat implements Playback.
         if (mPlayingQueue != null && !mPlayingQueue.isEmpty()) {
             if (mRepeatMode == NO_REPEAT && mCurrentIndexOnQueue == mPlayingQueue.size() - 1) {
                 handlePauseRequest();
-                mPlayback.seekTo(0);
+                Completable.fromAction(() -> mPlayback.seekTo(0))
+                        .subscribeOn(Schedulers.single())
+                        .subscribe();
                 return;
             }
             if (mRepeatMode == SHUFFLE) {
@@ -248,6 +250,7 @@ public class MusicService extends MediaBrowserServiceCompat implements Playback.
     public void onPlaybackStatusChanged(PlaybackStateCompat state) {
         mSession.setPlaybackState(state);
         mNotificationManager.update(state);
+
     }
 
     public MediaSessionCompat getSession() {
