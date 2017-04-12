@@ -61,8 +61,6 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
     View bottomSheet;
     @BindView(R.id.fab)
     FloatingActionButton fab;
-    //    @BindView(R.id.bs_content)
-//    LinearLayout bs_content;
     @BindView(R.id.queueList)
     ListView queueList;
     @BindView(R.id.drawer)
