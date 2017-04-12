@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.media.MediaBrowserCompat;
@@ -76,6 +77,8 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
     ImageButton playingQueueButton;
     @BindView(R.id.closeSheetButton)
     ImageButton closeSheetButton;
+    @BindView(R.id.title_bar)
+    ConstraintLayout bottomSheetLayout;
     @BindView(R.id.subtitle_playing_now)
     TextView artist;
     @BindView(R.id.duration)
@@ -146,7 +149,7 @@ public class MainActivity extends AppCompatActivity //        implements LoaderM
         mInfoDialogWrapper = new InfoDialogWrapper(this);
         seekBar.setOnSeekBarChangeListener(onSeekBarChangeListener);
         mBottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
-        mBottomSheetBehavior.setBottomSheetCallback(mSheetCallback = new PlayingNowSheetCallback(this, title, fab, playingQueueButton, closeSheetButton, artist));
+        mBottomSheetBehavior.setBottomSheetCallback(mSheetCallback = new PlayingNowSheetCallback(this, bottomSheetLayout, fab));
         queueList.setAdapter(mQueueAdapter = new QueueListAdapter(this, new ArrayList<>()));
         queueList.setOnItemClickListener((adapterView, view, i, l) -> MediaControllerCompat.getMediaController(MainActivity.this).getTransportControls().skipToQueueItem(l));
         if (savedInstanceState != null) {

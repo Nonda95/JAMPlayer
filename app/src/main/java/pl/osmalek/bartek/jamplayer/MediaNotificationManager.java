@@ -29,7 +29,7 @@ public class MediaNotificationManager {
     public void update(PlaybackStateCompat playbackState) {
         if (playbackState == null || playbackState.getState() == PlaybackStateCompat.STATE_STOPPED ||
                 playbackState.getState() == PlaybackStateCompat.STATE_NONE) {
-            if (playbackState != null && playbackState.getState() == PlaybackStateCompat.STATE_STOPPED) {
+            if (playbackState != null && mStarted) {
                 mService.stopForeground(true);
                 mService.stopSelf();
                 mStarted = false;
@@ -58,9 +58,7 @@ public class MediaNotificationManager {
             mService.startForeground(NOTIFICATION_ID, notification);
         } else {
             mService.stopForeground(false);
-            mNotificationManager.notify(NOTIFICATION_ID, notification);
         }
-
-
+        mNotificationManager.notify(NOTIFICATION_ID, notification);
     }
 }

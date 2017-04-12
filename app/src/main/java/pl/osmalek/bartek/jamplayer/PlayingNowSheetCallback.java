@@ -2,36 +2,36 @@ package pl.osmalek.bartek.jamplayer;
 
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
+import android.support.constraint.ConstraintSet;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.transition.TransitionManager;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Gravity;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
-import android.widget.ImageButton;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
 public class PlayingNowSheetCallback extends android.support.design.widget.BottomSheetBehavior.BottomSheetCallback {
+    private final ConstraintSet collapsedSet;
+    private final ConstraintSet expandedSet;
     private AppCompatActivity mContext;
-    private LinearLayout mContent;
-    private TextView mTitle;
+    private ConstraintLayout layout;
+    private boolean isExpandedLayout;
     private FloatingActionButton mFab;
-    private ImageButton mPlayingQueueButton;
-    private ImageButton mCloseSheetButton;
-    private TextView mArtist;
     private AccelerateDecelerateInterpolator interpolator;
 
-    public PlayingNowSheetCallback(AppCompatActivity context, TextView title, FloatingActionButton fab, ImageButton playingQueueButton, ImageButton closeSheetButton, TextView artist) {
+    public PlayingNowSheetCallback(AppCompatActivity context, ConstraintLayout layout, FloatingActionButton fab) {
         mContext = context;
+        this.layout = layout;
 //        mContent = content;
-        mTitle = title;
         mFab = fab;
-        mPlayingQueueButton = playingQueueButton;
-        mCloseSheetButton = closeSheetButton;
-        mArtist = artist;
+        isExpandedLayout = false;
         interpolator = new AccelerateDecelerateInterpolator();
+        collapsedSet = new ConstraintSet();
+        collapsedSet.clone(context, R.layout.collapsed_sheet);
+        expandedSet = new ConstraintSet();
+        expandedSet.clone(context, R.layout.expanded_sheet);
     }
 
     @Override
@@ -41,13 +41,18 @@ public class PlayingNowSheetCallback extends android.support.design.widget.Botto
             fabParams.gravity = Gravity.BOTTOM;
             mFab.setLayoutParams(fabParams);
             mFab.setTranslationX(0);
-            mPlayingQueueButton.setVisibility(View.VISIBLE);
-            mCloseSheetButton.setVisibility(View.VISIBLE);
-            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) mTitle.getLayoutParams();
-            params.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.titleExpandedMargin));
-            params.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.titleExpandedMargin));
-            mTitle.setLayoutParams(params);
-            mArtist.setVisibility(View.VISIBLE);
+//            mPlayingQueueButton.setVisibility(View.VISIBLE);
+//            mCloseSheetButton.setVisibility(View.VISIBLE);
+//            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) mTitle.getLayoutParams();
+//            params.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.titleExpandedMargin));
+//            params.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.titleExpandedMargin));
+//            mTitle.setLayoutParams(params);
+//            mArtist.setVisibility(View.VISIBLE);
+            if (!isExpandedLayout) {
+                TransitionManager.beginDelayedTransition(layout);
+                expandedSet.applyTo(layout);
+                isExpandedLayout = true;
+            }
         } else if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
 //            mPlayingQueueButton.setVisibility(View.INVISIBLE);
 //            mCloseSheetButton.setVisibility(View.GONE);
@@ -55,27 +60,40 @@ public class PlayingNowSheetCallback extends android.support.design.widget.Botto
 //            params.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.titleEndMargin));
 //            params.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.titleStartMargin));
 //            mTitle.setLayoutParams(params);
-            mPlayingQueueButton.setVisibility(View.INVISIBLE);
-            mCloseSheetButton.setVisibility(View.GONE);
-            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) mTitle.getLayoutParams();
-            params.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.titleEndMargin));
-            params.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.titleStartMargin));
-            mTitle.setLayoutParams(params);
-            fabParams.gravity = Gravity.END | Gravity.BOTTOM;
-            mFab.setLayoutParams(fabParams);
-            mFab.setTranslationX(0);
-            mArtist.setVisibility(View.GONE);
+
+            if (isExpandedLayout) {
+                TransitionManager.beginDelayedTransition(layout);
+                collapsedSet.applyTo(layout);
+                isExpandedLayout = false;
+            }
+//            mPlayingQueueButton.setVisibility(View.INVISIBLE);
+//            mCloseSheetButton.setVisibility(View.GONE);
+//            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) mTitle.getLayoutParams();
+//            params.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.titleEndMargin));
+//            params.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.titleStartMargin));
+//            mTitle.setLayoutParams(params);
+//            fabParams.gravity = Gravity.END | Gravity.BOTTOM;
+//            mFab.setLayoutParams(fabParams);
+//            mFab.setTranslationX(0);
+//            mArtist.setVisibility(View.GONE);
+
+
 //            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams)mTitle.getLayoutParams();
 //            params.horizontalBias = 0;
 //            mTitle.setLayoutParams(params);
         } else if (newState == BottomSheetBehavior.STATE_DRAGGING) {
-            mPlayingQueueButton.setVisibility(View.INVISIBLE);
-            mCloseSheetButton.setVisibility(View.GONE);
-            mArtist.setVisibility(View.GONE);
-            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) mTitle.getLayoutParams();
-            params.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.titleEndMargin));
-            params.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.titleStartMargin));
-            mTitle.setLayoutParams(params);
+            if (isExpandedLayout) {
+                TransitionManager.beginDelayedTransition(layout);
+                collapsedSet.applyTo(layout);
+                isExpandedLayout = false;
+            }
+//            mPlayingQueueButton.setVisibility(View.INVISIBLE);
+//            mCloseSheetButton.setVisibility(View.GONE);
+//            mArtist.setVisibility(View.GONE);
+//            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) mTitle.getLayoutParams();
+//            params.setMarginEnd(mContext.getResources().getDimensionPixelSize(R.dimen.titleEndMargin));
+//            params.setMarginStart(mContext.getResources().getDimensionPixelSize(R.dimen.titleStartMargin));
+//            mTitle.setLayoutParams(params);
         }
     }
 
