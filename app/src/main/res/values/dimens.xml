@@ -3,7 +3,7 @@
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
-    <dimen name="bottom_sheet_margin">-16dp</dimen>
+    <dimen name="bottom_sheet_margin">-8dp</dimen>
     <dimen name="bottom_sheet_peek">68dp</dimen>
     <dimen name="statusbar_margin">0dp</dimen>
     <dimen name="fab_padding">0dp</dimen>

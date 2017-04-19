@@ -11,14 +11,11 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.view.ContextThemeWrapper;
+import android.view.ContextThemeWrapper;
 import android.widget.Toast;
 
 import pl.osmalek.bartek.jamplayer.R;
 
-/**
- * Created by osmalek on 21.10.2016.
- */
 
 public abstract class PermissionActivity extends AppCompatActivity {
     static final int READ_EXTERNAL_STORAGE_PERMISSION = 1;
