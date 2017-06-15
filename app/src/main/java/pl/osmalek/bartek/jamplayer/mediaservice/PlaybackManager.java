@@ -14,7 +14,7 @@ import android.support.v4.media.session.PlaybackStateCompat;
 
 import java.io.IOException;
 
-
+// TODO: 15.06.2017 Refactor with RXJava
 class PlaybackManager implements Playback, AudioManager.OnAudioFocusChangeListener,
         MediaPlayer.OnCompletionListener, MediaPlayer.OnSeekCompleteListener, MediaPlayer.OnPreparedListener {
     private static final float VOLUME_DUCK = 0.2f;

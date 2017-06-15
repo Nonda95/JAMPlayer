@@ -20,6 +20,7 @@ import java.util.List;
 
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import butterknife.OnLongClick;
 import pl.osmalek.bartek.jamplayer.R;
 
 
@@ -132,14 +133,13 @@ public class FileAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
 
         @OnClick(R.id.more)
-        public void onMenuClick(View view) {
-            listener.onMenuClick((View) view.getParent().getParent(), more);
+        public void onMenuClick() {
+            listener.onMenuClick(getAdapterPosition(), more);
         }
 
         @OnClick(R.id.recycler_row)
-        public void onElementClick(View view) {
-            RecyclerView parent = (RecyclerView) view.getParent();
-            int position = parent.getChildLayoutPosition(view);
+        public void onElementClick() {
+            int position = getAdapterPosition();
             if (mHasParent) {
                 position--;
             }
@@ -150,12 +150,18 @@ public class FileAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 listener.onSongClick(mediaItem.getDescription());
             }
         }
+
+        @OnLongClick(R.id.recycler_row)
+        public boolean onElementLongClick() {
+            onMenuClick();
+            return true;
+        }
     }
 
     public interface OnFileClickListener {
         void onUpClick();
 
-        void onMenuClick(View view, ImageButton button);
+        void onMenuClick(int position, ImageButton button);
 
         void onFolderClick(MediaDescriptionCompat description);
 

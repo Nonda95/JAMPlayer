@@ -11,7 +11,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.view.ContextThemeWrapper;
+import android.view.ContextThemeWrapper;
 import android.widget.Toast;
 
 import pl.osmalek.bartek.jamplayer.R;

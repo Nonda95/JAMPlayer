@@ -9,11 +9,11 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.session.MediaControllerCompat;
-import android.support.v7.view.ContextThemeWrapper;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -238,8 +238,7 @@ public class BrowseFragment extends Fragment implements FileAdapter.OnFileClickL
     }
 
     @Override
-    public void onMenuClick(View view, ImageButton button) {
-        int position = songList.getChildLayoutPosition(view);
+    public void onMenuClick(int position, ImageButton button) {
         if (mHasParent) {
             if (position == 0) {
                 return;
