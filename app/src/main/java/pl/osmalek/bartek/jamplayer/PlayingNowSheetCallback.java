@@ -3,7 +3,6 @@ package pl.osmalek.bartek.jamplayer;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.constraint.ConstraintSet;
-import android.support.constraint.ConstraintSet;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
@@ -36,18 +35,20 @@ public class PlayingNowSheetCallback extends android.support.design.widget.Botto
     public void onStateChanged(@NonNull View bottomSheet, int newState) {
         CoordinatorLayout.LayoutParams fabParams = (CoordinatorLayout.LayoutParams) mFab.getLayoutParams();
         if (newState == BottomSheetBehavior.STATE_EXPANDED) {
-            fabParams.gravity = Gravity.CENTER | Gravity.BOTTOM;
-            mFab.setTranslationX(0);
+            fabParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
             mFab.setLayoutParams(fabParams);
+            mFab.setTranslationX(0);
             if (!isExpandedLayout) {
                 TransitionManager.beginDelayedTransition(layout);
                 expandedSet.applyTo(layout);
                 isExpandedLayout = true;
             }
         } else if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
+
             fabParams.gravity = Gravity.END | Gravity.BOTTOM;
-            mFab.setTranslationX(0);
             mFab.setLayoutParams(fabParams);
+            mFab.setTranslationX(0);
+
             if (isExpandedLayout) {
                 TransitionManager.beginDelayedTransition(layout);
                 collapsedSet.applyTo(layout);
@@ -68,7 +69,7 @@ public class PlayingNowSheetCallback extends android.support.design.widget.Botto
 
         View fabParent = (View) mFab.getParent();
         CoordinatorLayout.LayoutParams fabParams = (CoordinatorLayout.LayoutParams) mFab.getLayoutParams();
-        if (fabParams.gravity == (Gravity.END | Gravity.BOTTOM)) {
+        if (fabParams.gravity != (Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL)) {
             mFab.setTranslationX(((fabParent.getWidth() - mFab.getWidth()) / 2 - mFab.getX() + mFab.getTranslationX()) * offset);
         } else {
             mFab.setTranslationX(((fabParent.getWidth() - fabParams.width) / 2 - fabParams.getMarginEnd()) * (1 - offset));
