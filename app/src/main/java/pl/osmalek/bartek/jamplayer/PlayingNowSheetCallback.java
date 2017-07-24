@@ -45,6 +45,10 @@ public class PlayingNowSheetCallback extends android.support.design.widget.Botto
             }
         } else if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
 
+            fabParams.gravity = Gravity.END | Gravity.BOTTOM;
+            mFab.setLayoutParams(fabParams);
+            mFab.setTranslationX(0);
+
             if (isExpandedLayout) {
                 TransitionManager.beginDelayedTransition(layout);
                 collapsedSet.applyTo(layout);
